@@ -8,6 +8,10 @@ edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
+nom = "5"
+guts = { git = "https://github.com/ybyygu/guts.git" }
+gchemol-core = { path = "../gchemol-core" }
+text-parser = { path = "../parser", features = ["adhoc"] }
 
 [dev-dependencies]
 # cargo:1 ends here
