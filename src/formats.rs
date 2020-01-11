@@ -2,6 +2,7 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*mods][mods:1]]
 mod xyz;
+mod mol2;
 // mods:1 ends here
 
 // imports
@@ -14,8 +15,13 @@ use text_parser::IResult;
 // exports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
-pub(crate) use gchemol_core::{Atom, Molecule};
+pub(crate) use gchemol_core::{Atom, Bond, BondKind, Lattice, Molecule};
 pub(crate) use guts::prelude::*;
+
+pub(crate) mod parser {
+    pub use text_parser::parsers::*;
+    pub use text_parser::TextReader;
+}
 // exports:1 ends here
 
 // trait

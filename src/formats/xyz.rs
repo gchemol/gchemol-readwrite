@@ -1,9 +1,7 @@
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use text_parser::parsers::*;
-
-use super::*;
+use super::{parser::*, *};
 // imports:1 ends here
 
 // atoms
@@ -23,11 +21,12 @@ fn read_atom_xyz(s: &str) -> IResult<&str, (&str, Point3)> {
 
 #[test]
 fn test_read_atom() {
-    let (_, (symbol, _)) = read_atom_xyz("C -11.4286 -1.3155  0.0000\n").unwrap();
+    let line = "C -11.4286 -1.3155  0.0000\n";
+    let (_, (symbol, _)) = read_atom_xyz(line).unwrap();
     assert_eq!("C", symbol);
 
-    let (_, (symbol, position)) =
-        read_atom_xyz("6 -11.4286 -1.3155  0.0000 0.0 0.0 0.0\n").unwrap();
+    let line = "6 -11.4286 -1.3155  0.0000 0.0 0.0 0.0\n";
+    let (_, (symbol, position)) = read_atom_xyz(line).unwrap();
     assert_eq!("6", symbol);
     assert_eq!(0.0, position[2]);
 }
