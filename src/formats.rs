@@ -1,8 +1,9 @@
 // mods
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*mods][mods:1]]
-mod xyz;
+mod cif;
 mod mol2;
+mod xyz;
 // mods:1 ends here
 
 // imports
