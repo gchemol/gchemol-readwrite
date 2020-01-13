@@ -22,7 +22,6 @@ use super::parser::*;
 /// 10.154(2)
 fn double_cif(s: &str) -> IResult<&str, f64> {
     use nom::number::complete::recognize_float;
-    use nom::sequence::delimited;
 
     let xx = opt(delimited(tag("("), digit1, tag(")")));
     do_parse!(
@@ -47,18 +46,6 @@ fn test_cif_float_number() {
     let (_, v) = double_cif("0.391(6)\n").expect("cif float2");
     assert_eq!(v, 0.3916);
 }
-
-// /// Recognizes a line containing a float value with preceeding tag
-// fn read_tagged_double<'a>(s: &'a str, label: &'a str) -> IResult<&'a str, f64> {
-//     let t = tag(label);
-//     do_parse!(s, space0 >> t >> space1 >> f: double >> eol >> (f))
-// }
-
-// #[test]
-// fn test_read_tagged_double() {
-//     let (_, v) = read_tagged_double(" abc 4.1 \n", "abc").expect("cif tagged f64");
-//     assert_eq!(4.1, v);
-// }
 // base:1 ends here
 
 // cell
@@ -179,8 +166,6 @@ fn test_atom_site_column_names() -> Result<()> {
 }
 
 fn atom_site_row(s: &str) -> IResult<&str, Vec<&str>> {
-    use nom::multi::separated_nonempty_list;
-
     let read_items = separated_nonempty_list(space1, not_space);
     do_parse!(s, space0 >> items: read_items >> eol >> (items))
 }

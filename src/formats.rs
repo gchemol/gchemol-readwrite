@@ -3,7 +3,12 @@
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*mods][mods:1]]
 mod cif;
 mod mol2;
+mod pdb;
+mod sdf;
 mod xyz;
+
+mod gaussian_input;
+mod vasp_input;
 // mods:1 ends here
 
 // imports
