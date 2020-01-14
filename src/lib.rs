@@ -4,7 +4,10 @@
 // :END:
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*lib.rs][lib.rs:1]]
+// ignore compiler warnings due to nom macro uses
+#[allow(unused)]
 mod formats;
+
 mod io;
 
 pub mod prelude {
