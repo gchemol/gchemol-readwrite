@@ -358,11 +358,143 @@ fn test_gjf_connectivity() {
 }
 // connectivity specs:1 ends here
 
+// parse molecule
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
+fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
+    let link0 = opt(link0_section);
+    do_parse!(
+        s,
+        link0 >>             // Link0 commands, which is optional section
+        route_section >>     // route section contains job keywords
+        t: title_section >>  // molecular title
+        (t)
+    )
+}
+
+fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
+    let read_atoms = many1(atom_line);
+    let read_bonds = opt(many1(read_connect_line));
+    do_parse!(
+        s,
+        read_charge_and_spin_list >> // charge and spin multipy
+        atoms: read_atoms  >>        // atom symbol, coordinates, atom type, ...
+        blank_line         >>
+        bonds: read_bonds  >>        // connectivity section
+        ({
+            let mut mol = Molecule::default();
+            let atoms = atoms.into_iter().map(|x| Atom::new(x.element_label, x.position));
+            mol.add_atoms_from((1..).zip(atoms));
+
+            // handle bonds
+            if let Some(bonds) = bonds {
+                for (u, v, b) in bonds.into_iter().flatten() {
+                    mol.add_bond(u, v, b);
+                }
+            }
+            mol
+        })
+    )
+}
+
+// FIXME: how about gaussian extra input
+pub(crate) fn parse_molecule(s: &str) -> Result<Molecule> {
+    let (r, title) = parse_molecule_meta(s).map_err(|e| format_err!("{}", e))?;
+    // We replace comma with space in molecular specification part for easy
+    // parsing.
+    let r = r.replace(",", " ");
+    let (r, mut mol) = parse_molecule_specs(&r).map_err(|e| {
+        format_err!(
+            "parsing gaussian input molecule specification failure: {:}.\n Input stream: {}",
+            e,
+            r
+        )
+    })?;
+    mol.set_title(&title);
+
+    Ok(mol)
+}
+
+#[test]
+fn test_parse_gaussian_molecule() {
+    let txt = "%chk=C5H12.chk
+%nproc=8
+%mem=5GB
+#p opt freq=noraman nosymm B3LYP/6-31+G** test geom=connect
+
+Title Card
+Required
+
+0 1
+ C(Fragment=1)    0         -1.29639700         -0.54790000         -0.04565800 L
+ H(Fragment=1)    0         -0.94903500         -1.58509500         -0.09306500 L
+ H(Fragment=1)    0         -0.93491200         -0.03582400         -0.94211800 L
+ H(Fragment=1)    0         -2.39017900         -0.56423400         -0.09090100 L
+ C(Fragment=2)    0         -0.80594100          0.14211700          1.23074100 L
+ H(Fragment=2)    0         -1.13863100          1.18750400          1.23095600 L
+ H(Fragment=2)    0          0.29065200          0.17299300          1.23044100 L
+ C(Fragment=3)    0         -1.29047900         -0.54051400          2.51480900 L
+ H(Fragment=3)    0         -0.95681000         -1.58684300          2.51564600 L
+ H(Fragment=3)    0         -2.38822700         -0.57344700          2.51397600 L
+ C(Fragment=4)    0         -0.80793200          0.14352700          3.79887800 L
+ H(Fragment=4)    0         -1.14052400          1.18894500          3.79694800 L
+ H(Fragment=4)    0          0.28866200          0.17430200          3.80089400 L
+ C(Fragment=5)    0         -1.30048800         -0.54500600          5.07527000 L
+ H(Fragment=5)    0         -0.95334000         -1.58219500          5.12438500 L
+ H(Fragment=5)    0         -0.94034400         -0.03198400          5.97172800 L
+ H(Fragment=5)    0         -2.39434000         -0.56114800          5.11880700 L
+
+ 1 2 1.0 3 1.0 4 1.0 5 1.0
+ 2
+ 3
+ 4
+ 5 6 1.0 7 1.0 8 1.0
+ 6
+ 7
+ 8 9 1.0 10 1.0 11 1.0
+ 9
+ 10
+ 11 12 1.0 13 1.0 14 1.0
+ 12
+ 13
+ 14 15 1.0 16 1.0 17 1.0
+ 15
+ 16
+ 17
+";
+
+    let mol = parse_molecule(txt).expect("gjf molecule");
+    assert_eq!(17, mol.natoms());
+    assert_eq!(16, mol.nbonds());
+}
+// parse molecule:1 ends here
+
 // test
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
 #[test]
-fn test_parse_gaussian_input() -> Result() {
-    todo!()
+fn test_parse_gaussian_input() -> Result<()> {
+    let f = "./tests/files/gaussian/test1036.com";
+    let reader = TextReader::from_path(f)?;
+
+    let link1 = |line: &str| "--link1--" == line.to_lowercase();
+    let bunches = reader.bunches(link1);
+    let mut part = String::new();
+    for lines in bunches {
+        // skip link1 line
+        for line in lines.into_iter().filter(|line| !link1(line)) {
+            part += &line;
+            // to avoid windows line ending issue, we stick to linux line ending
+            part += "\n";
+        }
+        if let Ok(mol) = parse_molecule(&part) {
+            println!("parsed molecule containing {:} atoms.", mol.natoms());
+        }
+
+        // reset buf
+        part.clear();
+    }
+
+    Ok(())
 }
 // test:1 ends here
