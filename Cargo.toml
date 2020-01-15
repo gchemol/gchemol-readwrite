@@ -15,4 +15,7 @@ gchemol-core = { path = "../gchemol-core" }
 text-parser = { path = "../parser", features = ["adhoc"] }
 
 [dev-dependencies]
+
+[features]
+adhoc = []
 # cargo:1 ends here

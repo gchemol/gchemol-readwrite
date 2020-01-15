@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-13 Mon 12:02>
+//       UPDATED:  <2020-01-15 Wed 10:52>
 //===============================================================================#
 // header:1 ends here
 
@@ -50,27 +50,6 @@ pub trait StringIO {
     fn parse_from<S: AsRef<str>, T: AsRef<str>>(s: S, fmt: T) -> Result<Molecule>;
 }
 // traits:1 ends here
-
-// api
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*api][api:1]]
-/// Read an iterator over `Molecule` from file.
-/// file format will be determined according to the path
-// https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result
-pub fn read<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
-    // let path = path.as_ref();
-    // FileOptions::new().read(path)
-    todo!()
-}
-
-/// Write molecules into file
-/// file format will be determined according to the path
-pub fn write<P: AsRef<Path>>(path: P, mols: &[Molecule]) -> Result<()> {
-    // let path = path.as_ref();
-    // FileOptions::new().write(path, mols)
-    todo!()
-}
-// api:1 ends here
 
 // file
 
@@ -118,3 +97,43 @@ impl ToFile for Molecule {
     }
 }
 // molecule:1 ends here
+
+// api
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*api][api:1]]
+/// Read an iterator over `Molecule` from file.
+/// file format will be determined according to the path
+pub fn read<P: AsRef<Path>>(path: P) -> impl Iterator<Item = Result<Molecule>> {
+    // let path = path.as_ref();
+    // FileOptions::new().read(path)
+    std::iter::from_fn(move || todo!())
+}
+
+/// Write molecules into file
+/// file format will be determined according to the path
+pub fn write<P: AsRef<Path>>(path: P, mols: &[Molecule]) -> Result<()> {
+    // let path = path.as_ref();
+    // FileOptions::new().write(path, mols)
+    todo!()
+}
+
+#[cfg(feature = "adhoc")]
+// https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result
+/// Read all molecules from `path`.
+pub fn read_molecules<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
+    read(path).collect()
+}
+
+#[cfg(feature = "adhoc")]
+/// Read molecules in specific chemical file format.
+pub fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: &str) -> impl Iterator<Item = Result<Molecule>> {
+    let cf = crate::formats::guess_chemical_file_format(path.as_ref(), Some(fmt));
+    std::iter::from_fn(move || todo!())
+}
+
+#[cfg(feature = "adhoc")]
+/// Write molecules into path in specific chemical file format.
+pub fn write_chemical_file<P: AsRef<Path>>(path: P, mols: &[Molecule], fmt: &str) -> Result<()> {
+    todo!()
+}
+// api:1 ends here
