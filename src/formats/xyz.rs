@@ -100,20 +100,49 @@ H -13.7062  1.5395  0.0000\n";
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
     let mol = if plain {
-        let (_, atoms) = read_atoms_pxyz(input)
-            .map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
+        let (_, atoms) =
+            read_atoms_pxyz(input).map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
 
-        Molecule::from_atoms(atoms)
+        build_mol(atoms)
     } else {
-        let (_, (title, atoms)) = read_atoms_xyz(input)
-            .map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
+        let (_, (title, atoms)) =
+            read_atoms_xyz(input).map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
 
-        let mut mol = Molecule::from_atoms(atoms);
+        let mut mol = build_mol(atoms);
         mol.set_title(&title);
         mol
     };
 
     Ok(mol)
+}
+
+/// Handle dummy TV atoms (transitional vector, traditionally used in
+/// Gaussian/MOPAC package for periodic system)
+fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
+    let mut lat_vectors = vec![];
+    let atoms = atoms.into_iter().filter_map(|x| {
+        let a: Atom = x.into();
+        match a.kind() {
+            AtomKind::Dummy(x) => {
+                if x == "TV" {
+                    debug!("found TV dummy atom.");
+                    lat_vectors.push(a.position());
+                }
+                None
+            }
+            AtomKind::Element(x) => Some(a),
+        }
+    });
+    let mut mol = Molecule::from_atoms(atoms);
+
+    // construct lattice parsed from three "TV" dummy atoms.
+    if lat_vectors.len() == 3 {
+        let lat = Lattice::new([lat_vectors[0], lat_vectors[1], lat_vectors[2]]);
+        mol.set_lattice(lat);
+    } else {
+        error!("Expect 3, but found {} TV atoms.", lat_vectors.len());
+    }
+    mol
 }
 // parse:1 ends here
 
@@ -191,7 +220,8 @@ pub(super) struct PlainXyzFile();
 
 impl ParseMolecule for PlainXyzFile {
     fn parse_molecule(&self, input: &str) -> Result<Molecule> {
-        parse_molecule(input, true)
+        // remove starting empty line
+        parse_molecule(input.trim_start(), true)
     }
 
     fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {

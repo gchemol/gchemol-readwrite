@@ -187,7 +187,7 @@ fn read_atom_record(s: &str) -> IResult<&str, (usize, Atom)> {
 
 // Render atom in pdb format
 fn format_atom(i: usize, a: &Atom) -> String {
-    let p = a.position();
+    let [x, y, z] = a.position();
     format!(
         "ATOM  {index:>5} {name:<4}{alt_loc:1}{res_name:<3} {chain_id:1}{res_seq:>4}{icode:>1}   {x:-8.3}{y:-8.3}{z:-8.3}  1.00  0.00          {symbol:>2}\n",
         index=i,
@@ -197,10 +197,10 @@ fn format_atom(i: usize, a: &Atom) -> String {
         chain_id=1,
         res_seq=1,
         icode=" ",
-        x = p.x,
-        y = p.y,
-        z = p.z,
         symbol=a.symbol(),
+        x=x,
+        y=y,
+        z=z,
     )
 }
 
@@ -210,8 +210,7 @@ fn test_pdb_atom() {
     let (_, (i, a)) = read_atom_record(line).expect("pdb atom");
     assert_eq!(3, i);
     assert_eq!("S", a.symbol());
-    let p = a.position();
-    assert_eq!([3.484, 3.484, 3.474], [p.x, p.y, p.z]);
+    assert_eq!([3.484, 3.484, 3.474], a.position());
 
     let line = "ATOM      3  SI2 SIO2X   1       3.484   3.484   3.474  1.00  0.00      UC1 SI\n";
     let (_, (i, a)) = read_atom_record(line).expect("pdb atom");
@@ -221,8 +220,7 @@ fn test_pdb_atom() {
     let (_, (i, a)) = read_atom_record(line).expect("pdb atom");
     assert_eq!(1632, i);
     assert_eq!("O", a.symbol());
-    let p = a.position();
-    assert_eq!([-6.883, 5.767, 26.435], [p.x, p.y, p.z]);
+    assert_eq!([-6.883, 5.767, 26.435], a.position());
 
     let line = format_atom(3, &a);
     let (_, (i, b)) = read_atom_record(&line).expect("pdb atom");

@@ -20,7 +20,7 @@ use guts::fs::*;
 // exports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
-pub(self) use gchemol_core::{Atom, Bond, BondKind, Lattice, Molecule};
+pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule};
 pub(self) use guts::prelude::*;
 
 pub(self) mod parser {
