@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-15 Wed 10:52>
+//       UPDATED:  <2020-01-15 Wed 12:52>
 //===============================================================================#
 // header:1 ends here
 
@@ -73,12 +73,10 @@ impl ToFile for str {
 impl FromFile for Molecule {
     /// Construct molecule from external text file
     fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        // let path = path.as_ref();
-        // let cf = guess_chemfile_from_filename(path)?;
-        // let mut mols = cf.parse(path)?;
-        // mols.pop()
-        //     .ok_or(format_err!("No molecule: {:?}", path.display()))
-        todo!()
+        if let Some(mol) = read(path).last() {
+            return Ok(mol?);
+        }
+        bail!("No molecule found!");
     }
 }
 
@@ -104,36 +102,30 @@ impl ToFile for Molecule {
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
 pub fn read<P: AsRef<Path>>(path: P) -> impl Iterator<Item = Result<Molecule>> {
-    // let path = path.as_ref();
-    // FileOptions::new().read(path)
-    std::iter::from_fn(move || todo!())
+    crate::formats::read_chemical_file(path, None)
 }
 
-/// Write molecules into file
-/// file format will be determined according to the path
-pub fn write<P: AsRef<Path>>(path: P, mols: &[Molecule]) -> Result<()> {
+// https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result
+/// Read all molecules into a Vec from `path`.
+pub fn read_all<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
+    read(path).collect()
+}
+
+/// Read molecules in specific chemical file format.
+pub fn read_format<P: AsRef<Path>>(path: P, fmt: &str) -> impl Iterator<Item = Result<Molecule>> {
+    crate::formats::read_chemical_file(path, Some(fmt))
+}
+
+/// Write molecules into path. File format will be determined according to the
+/// path
+pub fn write<P: AsRef<Path>>(path: P, mols: impl Iterator<Item = Molecule>) -> Result<()> {
     // let path = path.as_ref();
     // FileOptions::new().write(path, mols)
     todo!()
 }
 
-#[cfg(feature = "adhoc")]
-// https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result
-/// Read all molecules from `path`.
-pub fn read_molecules<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
-    read(path).collect()
-}
-
-#[cfg(feature = "adhoc")]
-/// Read molecules in specific chemical file format.
-pub fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: &str) -> impl Iterator<Item = Result<Molecule>> {
-    let cf = crate::formats::guess_chemical_file_format(path.as_ref(), Some(fmt));
-    std::iter::from_fn(move || todo!())
-}
-
-#[cfg(feature = "adhoc")]
 /// Write molecules into path in specific chemical file format.
-pub fn write_chemical_file<P: AsRef<Path>>(path: P, mols: &[Molecule], fmt: &str) -> Result<()> {
+pub fn write_format<P: AsRef<Path>>(path: P, mols: &[Molecule], fmt: &str) -> Result<()> {
     todo!()
 }
 // api:1 ends here

@@ -15,5 +15,5 @@ pub mod prelude {
     pub use crate::io::ToFile;
 }
 
-pub use crate::io::{read, write};
+pub use crate::io::{read, read_all, write};
 // lib.rs:1 ends here

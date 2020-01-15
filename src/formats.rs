@@ -32,7 +32,7 @@ pub(self) mod parser {
 // traits
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*traits][traits:1]]
-pub(crate) trait ChemicalFile: ParseMolecule {
+pub(self) trait ChemicalFile: ParseMolecule {
     /// Chemical file type.
     fn ftype(&self) -> &str;
 
@@ -87,7 +87,7 @@ use self::parser::*;
 type FileReader = BufReader<File>;
 
 /// Parse a molecule from string slice.
-pub(crate) trait ParseMolecule {
+pub(self) trait ParseMolecule {
     /// parse molecule from string slice in a part of chemical file.
     fn parse_molecule(&self, input: &str) -> Result<Molecule>;
 
@@ -96,25 +96,39 @@ pub(crate) trait ParseMolecule {
     fn mark_bunch(&self) -> Box<Fn(&str) -> bool>;
 }
 
-/// Return an iterator over parsed molecules.
-pub(crate) fn parse_molecules<P>(r: TextReader<FileReader>, parser: P) -> impl Iterator<Item = Result<Molecule>>
-where
-    P: ParseMolecule,
-{
-    // string buffer
-    let mut part = String::new();
-    let bunches = r.bunches(parser.mark_bunch());
-    bunches.map(move |lines| {
-        for line in lines {
-            part += &line;
-            part += "\n";
-        }
-        let mol = parser.parse_molecule(&part);
+/// Read molecules in specific chemical file format.
+pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> impl Iterator<Item = Result<Molecule>> {
+    let cf = guess_chemical_file_format(path.as_ref(), fmt);
 
-        // reset string buffer
-        part.clear();
-        mol
-    })
+    let mut parsed_mols = None;
+    if let Some(parser) = cf {
+        match TextReader::from_path(path) {
+            Ok(reader) => {
+                // string buffer
+                let mut part = String::new();
+                let bunches = reader.bunches(parser.mark_bunch());
+                let mols = bunches.map(move |lines| {
+                    for line in lines {
+                        part += &line;
+                        part += "\n";
+                    }
+                    let mol = parser.parse_molecule(&part);
+
+                    // reset string buffer
+                    part.clear();
+                    mol
+                });
+                parsed_mols = Some(mols);
+            }
+            Err(e) => {
+                error!("read file error: {}", e);
+            }
+        }
+    } else {
+        error!("no available parser!");
+    }
+
+    parsed_mols.into_iter().flatten()
 }
 // adhoc:1 ends here
 
@@ -136,7 +150,7 @@ macro_rules! avail_parsers {
 }
 
 /// guess the most appropriate file format by its file extensions
-pub(crate) fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<ChemicalFile>> {
+pub(self) fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<ChemicalFile>> {
     let backends: Vec<Box<ChemicalFile>> = avail_parsers!();
     // 1. by file type
     if let Some(fmt) = fmt {
