@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-15 Wed 12:52>
+//       UPDATED:  <2020-01-15 Wed 14:30>
 //===============================================================================#
 // header:1 ends here
 
@@ -82,16 +82,8 @@ impl FromFile for Molecule {
 
 impl ToFile for Molecule {
     /// Save molecule to an external file
-    fn to_file<T: AsRef<Path>>(&self, filename: T) -> Result<()> {
-        // let filename = filename.as_ref();
-        // let cf = guess_chemfile(&filename.display().to_string(), None)
-        //     .ok_or(format_err!("not supported file format: {:?}", filename))?;
-        // let t = cf.format_molecule(&self)?;
-
-        // t.to_file(filename)?;
-
-        // Ok(())
-        todo!()
+    fn to_file<T: AsRef<Path>>(&self, path: T) -> Result<()> {
+        write(path, vec![self])
     }
 }
 // molecule:1 ends here
@@ -118,14 +110,16 @@ pub fn read_format<P: AsRef<Path>>(path: P, fmt: &str) -> impl Iterator<Item = R
 
 /// Write molecules into path. File format will be determined according to the
 /// path
-pub fn write<P: AsRef<Path>>(path: P, mols: impl Iterator<Item = Molecule>) -> Result<()> {
-    // let path = path.as_ref();
-    // FileOptions::new().write(path, mols)
-    todo!()
+pub fn write<'a, P: AsRef<Path>>(path: P, mols: impl IntoIterator<Item = &'a Molecule>) -> Result<()> {
+    crate::formats::write_chemical_file(path, mols, None)
 }
 
 /// Write molecules into path in specific chemical file format.
-pub fn write_format<P: AsRef<Path>>(path: P, mols: &[Molecule], fmt: &str) -> Result<()> {
-    todo!()
+pub fn write_format<'a, P: AsRef<Path>>(
+    path: P,
+    mols: impl IntoIterator<Item = &'a Molecule>,
+    fmt: &str,
+) -> Result<()> {
+    crate::formats::write_chemical_file(path, mols, Some(fmt))
 }
 // api:1 ends here

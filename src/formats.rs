@@ -59,15 +59,6 @@ pub(self) trait ChemicalFile: ParseMolecule {
         false
     }
 
-    // /// Save multiple molecules into a file
-    // fn write(&self, filename: &Path, mols: &[Molecule]) -> Result<()> {
-    //     use crate::io::prelude::ToFile;
-
-    //     let txt = self.format(mols)?;
-    //     &txt.to_file(filename)?;
-    //     Ok(())
-    // }
-
     /// print a brief description about a chemical file format
     fn describe(&self) {
         println!(
@@ -129,6 +120,27 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> 
     }
 
     parsed_mols.into_iter().flatten()
+}
+
+/// Write molecules into path in specific chemical file format.
+pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
+    path: P,
+    mols: impl IntoIterator<Item = &'a Molecule>,
+    fmt: Option<&str>,
+) -> Result<()> {
+    use std::fs::File;
+
+    let path = path.as_ref();
+    if let Some(cf) = guess_chemical_file_format(path, fmt) {
+        let mut fp = File::create(path).with_context(|| format!("Failed to create file: {:?}", path))?;
+
+        for mol in mols {
+            let s = cf.format_molecule(mol)?;
+            fp.write(s.as_bytes());
+        }
+    }
+
+    Ok(())
 }
 // adhoc:1 ends here
 
