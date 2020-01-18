@@ -164,9 +164,9 @@ macro_rules! avail_parsers {
             Box::new(self::xyz::XyzFile()),
             Box::new(self::xyz::PlainXyzFile()),
             Box::new(self::mol2::Mol2File()),
+            Box::new(self::cif::CifFile()),
             // Box::new(self::sdf::SdfFile()),
             // Box::new(self::vasp::PoscarFile()),
-            // Box::new(self::cif::CifFile()),
             // Box::new(self::pdb::PdbFile()),
         ]
     };

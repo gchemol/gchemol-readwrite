@@ -51,15 +51,6 @@ fn test_cif_float_number() {
 // cell
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*cell][cell:1]]
-// fn read_tagged_double<'a>(t: &'a str) -> impl Fn(&'a str) -> IResult<&'a str, f64> {
-//     use nom::sequence::tuple;
-
-//     map(
-//         tuple((space0, tag(t), space1, double, eol)),
-//         |(_, _, _, e, _)| e,
-//     )
-// }
-
 fn cell_params_xx(s: &str) -> IResult<&str, (&str, f64)> {
     let tag_cell = tag("_cell_");
     do_parse!(
@@ -69,17 +60,12 @@ fn cell_params_xx(s: &str) -> IResult<&str, (&str, f64)> {
 }
 
 fn read_cell_params(s: &str) -> IResult<&str, Vec<(&str, f64)>> {
-    let jump = take_until("_cell_length_a");
+    let jump = take_until("_cell_");
     let read_params = many1(cell_params_xx);
-    do_parse!(
-        s,
-        jump >> // xx
-        params: read_params >> // xx
-        (params)
-    )
+    do_parse!(s, jump >> params: read_params >> (params))
 }
 
-fn read_cell(s: &str) -> Result<[f64; 6]> {
+fn parse_cell(s: &str) -> Result<[f64; 6]> {
     let (_, values) = read_cell_params(s).map_err(|e| format_err!("read cell failure"))?;
 
     let d: std::collections::HashMap<_, _> = values.into_iter().collect();
@@ -106,10 +92,9 @@ _cell_length_b                    20.5160
 _cell_angle_alpha                 90.0000
 _cell_angle_beta                  90.0000
 _cell_angle_gamma                 90.0000
-loop_
 ";
 
-    let param = read_cell(txt).context("cif cell")?;
+    let param = parse_cell(txt).context("cif cell")?;
     assert_eq!(param[1], 20.5160);
 
     Ok(())
@@ -146,18 +131,17 @@ fn test_atom_site_column_name() -> Result<()> {
 }
 
 fn read_atom_site_column_names(s: &str) -> IResult<&str, Vec<&str>> {
-    preceded(tag("loop_\n"), many1(atom_site_column_name))(s)
+    many1(atom_site_column_name)(s)
 }
 
 #[test]
 fn test_atom_site_column_names() -> Result<()> {
-    let txt = "loop_
-    _atom_site_label
-    _atom_site_type_symbol
-    _atom_site_fract_x
-    _atom_site_fract_y
-    _atom_site_fract_z
-    _atom_site_occupancy
+    let txt = "_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
 ";
     let (_, col_names) = read_atom_site_column_names(txt)?;
     assert_eq!(col_names.len(), 6);
@@ -189,13 +173,13 @@ fn test_read_cif_rows() -> Result<()> {
 }
 
 /// Read atoms in cif _atom_site loop
-fn read_atoms(s: &str) -> Result<Vec<Atom>> {
+fn parse_atoms(s: &str) -> Result<Vec<Atom>> {
     // column header loopup table
     // Example
     // -------
     //   0        1         2       3      4            5          6         7
     // label type_symbol fract_x fract_y fract_z U_iso_or_equiv adp_type occupancy
-    let (r, headers) = read_atom_site_column_names(&s).unwrap();
+    let (r, headers) = read_atom_site_column_names(&s).map_err(|e| format_err!("{}", e))?;
     let n_columns = headers.len();
 
     let table: std::collections::HashMap<_, _> = headers.iter().zip(0..).collect();
@@ -212,7 +196,8 @@ fn read_atoms(s: &str) -> Result<Vec<Atom>> {
     for row in rows {
         // sanity check
         if row.len() != n_columns {
-            bail!("malformed atom sites format!");
+            warn!("malformed atom sites format:\n{:?}", row);
+            continue;
         }
         // parse fractional coordinates
         let sfx = row[ifx];
@@ -234,8 +219,7 @@ fn read_atoms(s: &str) -> Result<Vec<Atom>> {
 
 #[test]
 fn test_read_cif_atoms() -> Result<()> {
-    let txt = "loop_
-  _atom_site_label
+    let txt = " _atom_site_label
   _atom_site_type_symbol
   _atom_site_fract_x
   _atom_site_fract_y
@@ -256,72 +240,164 @@ fn test_read_cif_atoms() -> Result<()> {
   Si11   Si    0.69930   0.92760   0.54120   0.00000  Uiso   1.00
   Si12   Si    0.69630   0.69120   0.54610   0.00000  Uiso   1.00
   ";
-    let v = read_atoms(txt)?;
+    let v = parse_atoms(txt)?;
     assert_eq!(12, v.len());
+
     Ok(())
 }
 // atoms:1 ends here
 
-// molecule
+// parse
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
 fn cif_title(s: &str) -> IResult<&str, &str> {
-    preceded(tag("data_"), not_space)(s)
+    let tag_data = tag("data_");
+    do_parse!(s, tag_data >> t: not_space >> eol >> (t))
 }
 
 /// Create Molecule object from cif stream
-fn read_molecule(input: &str) -> Result<Molecule> {
-    // let jump1 = take_until("_cell_");
-    // let jump2 = take_until("_atom_site_");
-    // do_parse!(s,
-    //           jump >>           // ignore
-    //           params: read_cell_params >> // a, b, c, alpha, beta, gamma
-    //           jump2 >>                    // to _atom_site_xx
-    // )
-    todo!()
-}
-// molecule:1 ends here
+fn parse_molecule(s: &str) -> Result<Molecule> {
+    let (r, title) = cif_title(s).map_err(|e| format_err!("{:}", e))?;
+    let mut mol = Molecule::new(title);
 
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
-use guts::fs::*;
-use guts::prelude::*;
-
-#[test]
-fn test_cif() -> Result<()> {
-    let f = "../gchemol/readwrite/tests/files/cif/babel.cif";
-    let reader = TextReader::from_path(f)?;
-    let cif_data_record_label = |line: &str| line.starts_with("loop_");
-    let bunches = reader.bunches(cif_data_record_label);
-
-    let mut parts = vec![];
-    let mut buf = String::new();
-    for lines in bunches {
-        // collect each part for further parsing
-        for line in lines {
-            if !line.is_empty() {
-                buf.push_str(&line);
-                buf.push_str("\n");
-            }
-        }
-        parts.push(buf.clone());
-        buf.clear();
-    }
-    let mut mol = Molecule::new("cif");
-    for part in parts {
+    for part in r.split("loop_\n") {
         // cell parameters
-        if part.contains("_atom_site_fract_x") {
-            let atoms = read_atoms(&part)?;
-            let atoms = (1..).zip(atoms.into_iter());
-            mol.add_atoms_from(atoms);
-        } else if part.contains("_cell_length_a") {
-            let [a, b, c, alpha, beta, gamma] = read_cell(&part)?;
+        if part.contains("_cell_length_a") {
+            let [a, b, c, alpha, beta, gamma] = parse_cell(&part)?;
             let cell = Lattice::from_params(a, b, c, alpha, beta, gamma);
             mol.set_lattice(cell);
         }
+        // atom sites
+        if part.contains("_atom_site_fract_x") {
+            let atoms = parse_atoms(&part)?;
+            let atoms = (1..).zip(atoms.into_iter());
+            mol.add_atoms_from(atoms);
+        }
     }
 
-    Ok(())
+    Ok(mol)
 }
-// test:1 ends here
+// parse:1 ends here
+
+// format
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+/// Represent molecule in .cif format
+fn format_molecule(mol: &Molecule) -> Result<String> {
+    let mut lines = String::new();
+
+    // 1. meta inforation
+    lines.push_str("data_test\n");
+    lines.push_str("_audit_creation_method            'gchemol'\n");
+    lines.push_str("_symmetry_space_group_name_H-M    'P1'\n");
+    lines.push_str("_symmetry_Int_Tables_number       1\n");
+    lines.push_str("_symmetry_cell_setting            triclinic\n");
+    lines.push_str("\n");
+
+    // 2. cell parameters
+    lines.push_str("loop_\n");
+    lines.push_str("_symmetry_equiv_pos_as_xyz\n");
+    lines.push_str(" x,y,z\n");
+
+    let mut lat = mol.lattice.ok_or(format_err!("Not a periodic moelcule."))?;
+    let [a, b, c] = lat.lengths();
+    let [alpha, beta, gamma] = lat.angles();
+    lines.push_str(&format!("_cell_length_a     {:10.4}\n", a));
+    lines.push_str(&format!("_cell_length_b     {:10.4}\n", b));
+    lines.push_str(&format!("_cell_length_c     {:10.4}\n", c));
+    lines.push_str(&format!("_cell_angle_alpha  {:10.4}\n", alpha));
+    lines.push_str(&format!("_cell_angle_beta   {:10.4}\n", beta));
+    lines.push_str(&format!("_cell_angle_gamma  {:10.4}\n", gamma));
+    lines.push_str("\n");
+
+    // 3. atom fractional coordinates
+    lines.push_str("loop_\n");
+    lines.push_str("_atom_site_type_symbol\n");
+    lines.push_str("_atom_site_label\n");
+    lines.push_str("_atom_site_fract_x\n");
+    lines.push_str("_atom_site_fract_y\n");
+    lines.push_str("_atom_site_fract_z\n");
+
+    for (_, a) in mol.atoms() {
+        let position = a.position();
+        let symbol = a.symbol();
+        let name = a.label();
+        let p = lat.to_frac(position);
+        let s = format!("{:4}{:6}{:12.5}{:12.5}{:12.5}\n", symbol, name, p.x, p.y, p.z);
+        lines.push_str(&s);
+    }
+
+    // 4. bonds
+    // if mol.nbonds() > 0 {
+    //     lines.push_str("loop_\n");
+    //     lines.push_str("_geom_bond_atom_site_label_1\n");
+    //     lines.push_str("_geom_bond_atom_site_label_2\n");
+    //     lines.push_str("_geom_bond_distance\n");
+    //     lines.push_str("_geom_bond_site_symmetry_2\n");
+    //     lines.push_str("_ccdc_geom_bond_type\n");
+    //     for bond in mol.bonds() {
+    //         let symbol1 = frame.symbols.get(&current).unwrap();
+    //         let name1 = format!("{}{}", symbol1, current);
+    //         let p1 = frame.positions.get(&current).unwrap();
+    //         let p1 = Point3::new(p1[0], p1[1], p1[2]) - cell_origin;
+
+    //         let connected = frame.neighbors.get(&current).unwrap();
+    //         for other in connected {
+    //             if *other > current {
+    //                 let symbol2 = frame.symbols.get(&other).unwrap();
+    //                 let name2 = format!("{}{}", symbol2, other);
+    //                 let p2 = frame.positions.get(&other).unwrap();
+    //                 let p2 = Point3::new(p2[0], p2[1], p2[2]) - cell_origin;
+    //                 let (image, distance) = get_nearest_image(cell, p1, p2);
+    //                 if image.x == 0. && image.y == 0. && image.z == 0. {
+    //                     lines.push_str(&format!("{:6} {:6} {:6.3} {:6} S\n", name1, name2, distance, "."));
+    //                 } else {
+    //                     let symcode = get_image_symcode(image);
+    //                     lines.push_str(&format!("{:6} {:6} {:6.3} {:6} S\n", name1, name2, distance, symcode));
+    //                     let (image, distance) = get_nearest_image(cell, p2, p1);
+    //                     let symcode = get_image_symcode(image);
+    //                     lines.push_str(&format!("{:6} {:6} {:6.3} {:6} S\n", name2, name1, distance, symcode));
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    Ok(lines)
+}
+// format:1 ends here
+
+// impl chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+pub struct CifFile();
+
+impl ChemicalFile for CifFile {
+    fn ftype(&self) -> &str {
+        "text/cif"
+    }
+
+    fn possible_extensions(&self) -> Vec<&str> {
+        vec![".cif"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        format_molecule(mol)
+    }
+}
+
+impl ParseMolecule for CifFile {
+    fn parse_molecule(&self, input: &str) -> Result<Molecule> {
+        parse_molecule(input)
+    }
+
+    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
+        Box::new(|line| line.starts_with("data_"))
+    }
+
+    /// Skip reading some lines.
+    fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
+        Some(Box::new(|line| line.starts_with("data_")))
+    }
+}
+// impl chemfile:1 ends here

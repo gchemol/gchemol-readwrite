@@ -23,11 +23,11 @@ fn read_atom_xyz(s: &str) -> IResult<&str, (&str, Point3)> {
 #[test]
 fn test_read_atom() {
     let line = "C -11.4286 -1.3155  0.0000\n";
-    let (_, (symbol, _)) = read_atom_xyz(line).unwrap();
+    let (_, (symbol, _)) = read_atom_xyz(line).expect("xyz atom");
     assert_eq!("C", symbol);
 
     let line = "6 -11.4286 -1.3155  0.0000 0.0 0.0 0.0\n";
-    let (_, (symbol, position)) = read_atom_xyz(line).unwrap();
+    let (_, (symbol, position)) = read_atom_xyz(line).expect("xyz atom velocity");
     assert_eq!("6", symbol);
     assert_eq!(0.0, position[2]);
 }
@@ -89,7 +89,7 @@ H -11.4286 -2.4055  0.0000
 H -13.7062 -1.0905  0.0000
 H -13.7062  1.5395  0.0000\n";
 
-    let (_, (_, atoms)) = read_atoms_xyz(txt).unwrap();
+    let (_, (_, atoms)) = read_atoms_xyz(txt).expect("xyz atoms");
     assert_eq!(12, atoms.len());
 }
 // xyz/pxyz:1 ends here

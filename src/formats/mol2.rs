@@ -363,7 +363,7 @@ SMALL
 NO_CHARGES
 
 ";
-    let (_, (title, natoms, nbonds)) = read_molecule_meta(txt).unwrap();
+    let (_, (title, natoms, nbonds)) = read_molecule_meta(txt).expect("mol2 meta");
     assert_eq!(title, "Molecule Name");
     assert_eq!(natoms, 5);
     assert_eq!(nbonds, Some(4));
