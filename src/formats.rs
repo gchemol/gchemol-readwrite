@@ -85,6 +85,11 @@ pub(self) trait ParseMolecule {
     /// Mark the start position for a bunch of lines containing a single
     /// molecule in a large text file.
     fn mark_bunch(&self) -> Box<Fn(&str) -> bool>;
+
+    /// Seek the position of a specific line.
+    fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
+        None
+    }
 }
 
 /// Read molecules in specific chemical file format.
@@ -94,7 +99,13 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> 
     let mut parsed_mols = None;
     if let Some(parser) = cf {
         match TextReader::from_path(path) {
-            Ok(reader) => {
+            Ok(mut reader) => {
+                if let Some(skip) = parser.seek_line() {
+                    if reader.skip_until(skip).is_err() {
+                        error!("skip reading lines error");
+                        return parsed_mols.into_iter().flatten();
+                    }
+                }
                 // string buffer
                 let mut part = String::new();
                 let bunches = reader.bunches(parser.mark_bunch());
@@ -152,7 +163,7 @@ macro_rules! avail_parsers {
         vec![
             Box::new(self::xyz::XyzFile()),
             Box::new(self::xyz::PlainXyzFile()),
-            // Box::new(self::mol2::Mol2File()),
+            Box::new(self::mol2::Mol2File()),
             // Box::new(self::sdf::SdfFile()),
             // Box::new(self::vasp::PoscarFile()),
             // Box::new(self::cif::CifFile()),

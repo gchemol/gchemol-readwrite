@@ -15,13 +15,6 @@ use super::{parser::*, *};
 // # Sample record
 // @<TRIPOS>ATOM
 //       1 O1            0.000906    8.302448    1.688198 O.3      1 SUBUNIT   -0.0000
-//       2 O2           -1.779973    6.533331    2.469112 O.3      1 SUBUNIT    0.0000
-//       3 O3           -2.514076    9.013548    1.982554 O.3      1 SUBUNIT   -0.0000
-//       4 O4           -1.818038    7.434372    0.000000 O.3      1 SUBUNIT   -0.0000
-//       5 O5           -2.534921    4.390612    3.783500 O.3      1 SUBUNIT   -0.0000
-//       6 O6            0.000000    5.111131    3.783500 O.3      1 SUBUNIT   -0.0000
-//       7 T1           -1.528022    7.820533    1.536101 Si       1 SUBUNIT    0.0000
-//       8 T2           -1.518959    5.641709    3.783500 Si       1 SUBUNIT    0.0000
 // # Format
 // atom_id atom_name x y z atom_type [subst_id [subst_name [charge [status_bit]]]]
 
@@ -139,16 +132,24 @@ fn format_atom(a: &Atom) -> String {
 // atom:1 ends here
 
 // atoms
+// # Sample record
+// @<TRIPOS>ATOM
+//       1 O1            0.000906    8.302448    1.688198 O.3      1 SUBUNIT   -0.0000
+//       2 O2           -1.779973    6.533331    2.469112 O.3      1 SUBUNIT    0.0000
+//       3 O3           -2.514076    9.013548    1.982554 O.3      1 SUBUNIT   -0.0000
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atoms][atoms:1]]
 /// Parse Tripos Atom section
 fn read_atoms(s: &str) -> IResult<&str, Vec<(usize, Atom)>> {
-    many1(read_atom_record)(s)
+    let tag_atom = tag("@<TRIPOS>ATOM");
+    let atoms = many1(read_atom_record);
+    do_parse!(s, tag_atom >> eol >> s: atoms >> (s))
 }
 
 #[test]
 fn test_mol2_get_atoms() {
-    let lines = " 1 N           1.3863   -0.2920    0.0135 N.ar    1  UNL1       -0.2603
+    let lines = "@<TRIPOS>ATOM
+      1 N           1.3863   -0.2920    0.0135 N.ar    1  UNL1       -0.2603
       2 N          -1.3863    0.2923    0.0068 N.ar    1  UNL1       -0.2603
       3 C           0.9188    0.9708   -0.0188 C.ar    1  UNL1        0.0456
       4 C          -0.4489    1.2590   -0.0221 C.ar    1  UNL1        0.0456
@@ -178,13 +179,15 @@ fn test_mol2_get_atoms() {
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bonds][bonds:1]]
 /// Parse Tripos Bond section
 fn read_bonds(s: &str) -> IResult<&str, Vec<(usize, usize, Bond)>> {
+    let tag_bond = tag("@<TRIPOS>BOND");
     let bonds = many0(read_bond_record);
-    do_parse!(s, bonds: bonds >> (bonds))
+    do_parse!(s, tag_bond >> eol >> bonds: bonds >> (bonds))
 }
 
 #[test]
 fn test_mol2_bonds() {
-    let lines = " 1    13    11    1
+    let lines = "@<TRIPOS>BOND
+     1    13    11    1
      2    11    12    1
      3     8     4    1
      4     7     3    1
@@ -253,8 +256,10 @@ fn format_bond_order(bond: &Bond) -> &str {
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*lattice][lattice:1]]
 fn read_lattice(s: &str) -> IResult<&str, Lattice> {
+    let tag_crysin = tag("@<TRIPOS>CRYSIN");
     do_parse!(
         s,
+        tag_crysin >> eol >>    // goto section header
         space0 >>               // ignore leading spaces
         a: double >> space1 >>  // a
         b: double >> space1 >>  // b
@@ -272,14 +277,16 @@ fn read_lattice(s: &str) -> IResult<&str, Lattice> {
 
 #[test]
 fn test_formats_mol2_crystal() {
-    let txt = " 12.312000 4.959000 15.876000 90.000000 99.070000 90.000000 4 1\n";
+    let txt = "@<TRIPOS>CRYSIN
+ 12.312000 4.959000 15.876000 90.000000 99.070000 90.000000 4 1\n";
 
     let (_, mut x) = read_lattice(txt).expect("mol2 crystal");
     assert_eq!([12.312, 4.959, 15.876], x.lengths());
 }
 // lattice:1 ends here
 
-// molecule
+// parse
+// @<TRIPOS>MOLECULE
 // # Format
 // - mol_name
 // - num_atoms [num_bonds [num_subst [num_feat [num_sets]]]]
@@ -287,20 +294,57 @@ fn test_formats_mol2_crystal() {
 // - charge_type
 // - [status_bits [mol_comment]]
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
+fn read_molecule(s: &str) -> IResult<&str, Molecule> {
+    let jump = opt(take_until("@<TRIPOS>"));
+    let read_bonds = opt(read_bonds);
+    let read_lattice = opt(read_lattice);
+    do_parse!(
+        s,
+        jump >> meta: read_molecule_meta >> // meta data
+        jump >> atoms: read_atoms >>        // atoms
+        jump >> bonds: read_bonds >>        // optional bonds
+        jump >> lattice: read_lattice >>    // optional lattice
+        ({
+            let (title, natoms, nbonds) = meta;
+            let mut mol = Molecule::new(title);
+
+            // assign atoms
+            if natoms != atoms.len() {
+                warn!("Inconsistency: expected {} atoms, but found {}", natoms, atoms.len());
+            }
+            mol.add_atoms_from(atoms);
+
+            // assign bonds
+            if let Some(bonds) = bonds {
+                mol.add_bonds_from(bonds);
+            }
+
+            // assign lattice
+            if let Some(lattice) = lattice {
+                mol.set_lattice(lattice);
+            }
+
+            mol
+        })
+    )
+}
+
 fn read_counts(s: &str) -> IResult<&str, (usize, Option<usize>)> {
     let opt_num_bonds = opt(unsigned_digit);
     do_parse!(
         s,
-        n: unsigned_digit >> space0 >> m: opt_num_bonds >> read_line >> ((n, m))
+        space0 >> n: unsigned_digit >> space0 >> m: opt_num_bonds >> read_line >> ((n, m))
     )
 }
 
 fn read_molecule_meta(s: &str) -> IResult<&str, (&str, usize, Option<usize>)> {
+    let tag_mol = tag("@<TRIPOS>MOLECULE");
     do_parse!(
         s,
+        tag_mol >> eol >>        // section header
         title: read_until_eol >> // mol_name
-        counts: read_counts >>   // num_aatoms, num_bonds
+        counts: read_counts   >> // num_aatoms, num_bonds
         read_line >>             // ignore mol_type
         read_line >>             // ignore charge_type
         ({
@@ -312,65 +356,119 @@ fn read_molecule_meta(s: &str) -> IResult<&str, (&str, usize, Option<usize>)> {
 
 #[test]
 fn test_mol2_meta() {
-    let txt = " Molecule Name
+    let txt = "@<TRIPOS>MOLECULE
+Molecule Name
 5 4
 SMALL
 NO_CHARGES
 
 ";
     let (_, (title, natoms, nbonds)) = read_molecule_meta(txt).unwrap();
-    assert_eq!(title, " Molecule Name");
+    assert_eq!(title, "Molecule Name");
     assert_eq!(natoms, 5);
     assert_eq!(nbonds, Some(4));
 }
+// parse:1 ends here
 
-fn read_molecule() {
-    // // 2. Assign atoms
-    // let (input, _) = read_lines_until(input, "@<TRIPOS>ATOM")?;
-    // let (input, atoms) = read_atoms(input)?;
-    // let natoms = counts[0];
-    // if natoms != atoms.len() {
-    //     eprintln!("Inconsistency: expected {} atoms, but found {}", natoms, atoms.len());
-    // }
-    // // assign atoms
-    // let mut table = HashMap::new();
-    // for (i, a) in atoms {
-    //     let n = mol.add_atom(a);
-    //     table.insert(i, n);
-    // }
+// format
 
-    // // 3. Assign bonds (optional)
-    // let (input, current) = peek_line(input)?;
-    // let input = if current.starts_with("@<TRIPOS>BOND") {
-    //     let (input, bonds) = read_bonds(input)?;
-    //     for (i, j, b) in bonds {
-    //         let ni = table.get(&i).expect(".mol2 file: look up atom in bond record");
-    //         let nj = table.get(&j).expect(".mol2 file: look up atom in bond record");
-    //         mol.add_bond(*ni, *nj, b);
-    //     }
-    //     input
-    // } else {
-    //     input
-    // };
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+fn format_molecule(mol: &Molecule) -> Result<String> {
+    let natoms = mol.natoms();
+    let nbonds = mol.nbonds();
 
-    // // 4. Crystal (optional)
-    // let (input, _) = many_till!(input, read_line, peek!(
-    //     alt!(
-    //         tag!("@<TRIPOS>CRYSIN") |
-    //         tag!("@<TRIPOS>MOLECULE") |
-    //         eof
-    //     )
-    // ))?;
+    let mut lines = String::new();
+    lines += "#	Created by gchemol\n\n";
+    lines += "@<TRIPOS>MOLECULE\n";
+    lines += &format!("{}\n", mol.title());
 
-    // let (input, current) = peek_line(input)?;
-    // let input = if current.starts_with("@<TRIPOS>CRYSIN") {
-    //     let (input, lat) = read_lattice(input)?;
-    //     mol.set_lattice(lat);
-    //     input
-    // } else {
-    //     input
-    // };
+    // atom count, bond numbers, substructure numbers
+    lines += &format!("{:>5} {:>5}\n", natoms, nbonds);
+    // molecule type
+    lines += "SMALL\n";
+    // customed charges
+    lines += "USER CHARGES\n";
+    // atoms
+    lines += "@<TRIPOS>ATOM\n";
 
-    // Ok((input, mol))
+    // format atoms
+    for (i, a) in mol.atoms() {
+        lines += &format!("{:5} {}", i, format_atom(&a));
+    }
+
+    // format bonds
+    if nbonds > 0 {
+        lines += "@<TRIPOS>BOND\n";
+        let mut sn = 1;
+        for (i, j, b) in mol.bonds() {
+            lines += &format!(
+                "{sn:4} {bond_i:4} {bond_j:4} {bond_type:3}\n",
+                sn = sn,
+                bond_i = i,
+                bond_j = j,
+                bond_type = format_bond_order(&b)
+            );
+            sn += 1;
+        }
+    }
+
+    // format crystal
+    if let Some(mut lat) = &mol.lattice {
+        lines += "@<TRIPOS>CRYSIN\n";
+        let [a, b, c] = lat.lengths();
+        let [alpha, beta, gamma] = lat.angles();
+        lines += &format!(
+            "{a:10.4} {b:10.4} {c:10.4} {alpha:5.2} {beta:5.2} {gamma:5.2} {sgrp} 1\n",
+            a = a,
+            b = b,
+            c = c,
+            alpha = alpha,
+            beta = beta,
+            gamma = gamma,
+            // FIXME: crystal space group
+            sgrp = 4
+        );
+    }
+
+    // Final blank line
+    lines += "\n";
+
+    Ok(lines)
 }
-// molecule:1 ends here
+// format:1 ends here
+
+// impl chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+pub struct Mol2File();
+
+impl ChemicalFile for Mol2File {
+    fn ftype(&self) -> &str {
+        "text/mol2"
+    }
+
+    fn possible_extensions(&self) -> Vec<&str> {
+        vec![".mol2"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        format_molecule(mol)
+    }
+}
+
+impl ParseMolecule for Mol2File {
+    fn parse_molecule(&self, input: &str) -> Result<Molecule> {
+        let (_, mol) = read_molecule(input).map_err(|e| format_err!("{:}", e))?;
+        Ok(mol)
+    }
+
+    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
+        Box::new(|line| line.starts_with("@<TRIPOS>MOLECULE"))
+    }
+
+    /// Skip reading some lines.
+    fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
+        Some(Box::new(|line| line.starts_with("@<TRIPOS>MOLECULE")))
+    }
+}
+// impl chemfile:1 ends here

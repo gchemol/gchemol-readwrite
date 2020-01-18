@@ -9,6 +9,7 @@ authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
 nom = "5"
+regex = "1"
 #guts = { git = "https://github.com/ybyygu/guts.git", branch="dev" }
 guts = { path = "../../guts" }
 gchemol-core = { path = "../gchemol-core" }
