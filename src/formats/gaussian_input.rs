@@ -473,19 +473,18 @@ Required
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
 #[test]
-fn test_parse_gaussian_input() -> Result<()> {
+fn test_format_gaussian_input() -> Result<()> {
     let f = "./tests/files/gaussian/test1036.com";
     let reader = TextReader::from_path(f)?;
 
-    let link1 = |line: &str| "--link1--" == line.to_lowercase();
-    let bunches = reader.bunches(link1);
+    let link1_label = "--link1--\n";
+    let link1 = |line: &str| line.to_lowercase() == link1_label;
+    let bunches = reader.terminated_bunches(link1);
     let mut part = String::new();
     for lines in bunches {
-        // skip link1 line
-        for line in lines.into_iter().filter(|line| !link1(line)) {
-            part += &line;
-            // to avoid windows line ending issue, we stick to linux line ending
-            part += "\n";
+        if part.ends_with(link1_label) {
+            let n = part.len() - link1_label.len();
+            part.truncate(n)
         }
         if let Ok(mol) = parse_molecule(&part) {
             println!("parsed molecule containing {:} atoms.", mol.natoms());

@@ -464,7 +464,7 @@ impl ParseMolecule for Mol2File {
     }
 
     /// Skip reading some lines.
-    fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
+    fn seek_line(&self) -> Option<Box<dyn Fn(&str) -> bool>> {
         Some(Box::new(|line| line.starts_with("@<TRIPOS>MOLECULE")))
     }
 }

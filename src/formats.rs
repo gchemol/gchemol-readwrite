@@ -76,43 +76,12 @@ pub(self) trait ParseMolecule {
     /// parse molecule from string slice in a part of chemical file.
     fn parse_molecule(&self, input: &str) -> Result<Molecule>;
 
-    /// Mark the start position for a bunch of lines containing a single
-    /// molecule in a large text file.
-    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
-        todo!()
-    }
-
     /// Seek the position of a specific line.
-    fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
+    fn seek_line(&self) -> Option<Box<dyn Fn(&str) -> bool>> {
         None
     }
 }
 // traits:1 ends here
-
-// write
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*write][write:1]]
-/// Write molecules into path in specific chemical file format.
-pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
-    path: P,
-    mols: impl IntoIterator<Item = &'a Molecule>,
-    fmt: Option<&str>,
-) -> Result<()> {
-    use std::fs::File;
-
-    let path = path.as_ref();
-    if let Some(cf) = guess_chemical_file_format(path, fmt) {
-        let mut fp = File::create(path).with_context(|| format!("Failed to create file: {:?}", path))?;
-
-        for mol in mols {
-            let s = cf.format_molecule(mol)?;
-            fp.write(s.as_bytes());
-        }
-    }
-
-    Ok(())
-}
-// write:1 ends here
 
 // parse iter
 
@@ -179,9 +148,9 @@ where
 }
 // parse iter:1 ends here
 
-// read/adhoc2
+// read chemfile
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read/adhoc2][read/adhoc2:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
 pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> impl Iterator<Item = Result<Molecule>> {
     use self::cif::*;
     use self::mol2::*;
@@ -219,7 +188,32 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> 
         .chain(x3.into_iter().flatten())
         .chain(x4.into_iter().flatten())
 }
-// read/adhoc2:1 ends here
+// read chemfile:1 ends here
+
+// write chemifile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*write chemifile][write chemifile:1]]
+/// Write molecules into path in specific chemical file format.
+pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
+    path: P,
+    mols: impl IntoIterator<Item = &'a Molecule>,
+    fmt: Option<&str>,
+) -> Result<()> {
+    use std::fs::File;
+
+    let path = path.as_ref();
+    if let Some(cf) = guess_chemical_file_format(path, fmt) {
+        let mut fp = File::create(path).with_context(|| format!("Failed to create file: {:?}", path))?;
+
+        for mol in mols {
+            let s = cf.format_molecule(mol)?;
+            fp.write(s.as_bytes());
+        }
+    }
+
+    Ok(())
+}
+// write chemifile:1 ends here
 
 // backends
 
@@ -239,8 +233,8 @@ macro_rules! avail_parsers {
 }
 
 /// guess the most appropriate file format by its file extensions
-pub(self) fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<ChemicalFile>> {
-    let backends: Vec<Box<ChemicalFile>> = avail_parsers!();
+pub(self) fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<dyn ChemicalFile>> {
+    let backends: Vec<Box<dyn ChemicalFile>> = avail_parsers!();
     // 1. by file type
     if let Some(fmt) = fmt {
         for x in backends {
@@ -263,7 +257,7 @@ pub(self) fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> O
 
 /// description of all backends
 pub fn describe_backends() {
-    let backends: Vec<Box<ChemicalFile>> = avail_parsers!();
+    let backends: Vec<Box<dyn ChemicalFile>> = avail_parsers!();
 
     for cf in backends {
         cf.describe();

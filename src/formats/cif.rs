@@ -393,7 +393,7 @@ impl ParseMolecule for CifFile {
     }
 
     /// Skip reading some lines.
-    fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
+    fn seek_line(&self) -> Option<Box<dyn Fn(&str) -> bool>> {
         Some(Box::new(|line| line.starts_with("data_")))
     }
 }
