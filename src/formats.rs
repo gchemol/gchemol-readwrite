@@ -31,9 +31,9 @@ pub(self) mod parser {
 }
 // exports:1 ends here
 
-// traits
+// chemical file
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*traits][traits:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemical file][chemical file:1]]
 pub(self) trait ChemicalFile: ParseMolecule + Partition {
     /// Chemical file type.
     fn ftype(&self) -> &str;
@@ -81,7 +81,7 @@ pub(self) trait ParseMolecule {
         None
     }
 }
-// traits:1 ends here
+// chemical file:1 ends here
 
 // parse iter
 
@@ -152,41 +152,30 @@ where
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
 pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> impl Iterator<Item = Result<Molecule>> {
-    use self::cif::*;
-    use self::mol2::*;
-    use self::xyz::*;
-
     let path = path.as_ref();
+    let mut found = false;
 
-    let x1 = if XyzFile().parsable(path) {
-        XyzFile().parse_molecules_from_path(path).ok()
-    } else {
-        None
-    };
+    macro_rules! parser {
+        ($found:expr, $path:expr, $ee:expr) => {
+            // early return when found the right parser
+            if !$found && $ee().parsable($path) {
+                $found = true;
+                $ee().parse_molecules_from_path($path).ok()
+            } else {
+                None
+            }
+            .into_iter()
+            .flatten()
+        };
+    }
 
-    let x2 = if PlainXyzFile().parsable(path) {
-        PlainXyzFile().parse_molecules_from_path(path).ok()
-    } else {
-        None
-    };
-
-    let x3 = if Mol2File().parsable(path) {
-        Mol2File().parse_molecules_from_path(path).ok()
-    } else {
-        None
-    };
-
-    let x4 = if CifFile().parsable(path) {
-        CifFile().parse_molecules_from_path(path).ok()
-    } else {
-        None
-    };
-
-    x1.into_iter()
-        .flatten()
-        .chain(x2.into_iter().flatten())
-        .chain(x3.into_iter().flatten())
-        .chain(x4.into_iter().flatten())
+    let p1 = parser!(found, path, self::xyz::XyzFile);
+    let p2 = parser!(found, path, self::xyz::PlainXyzFile);
+    let p3 = parser!(found, path, self::mol2::Mol2File);
+    let p4 = parser!(found, path, self::cif::CifFile);
+    let p5 = parser!(found, path, self::gaussian_input::GaussianInputFile);
+    let p6 = parser!(found, path, self::vasp_input::PoscarFile);
+    p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6)
 }
 // read chemfile:1 ends here
 
@@ -234,7 +223,7 @@ macro_rules! avail_parsers {
 }
 
 /// guess the most appropriate file format by its file extensions
-pub(self) fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<dyn ChemicalFile>> {
+fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<dyn ChemicalFile>> {
     let backends: Vec<Box<dyn ChemicalFile>> = avail_parsers!();
     // 1. by file type
     if let Some(fmt) = fmt {
