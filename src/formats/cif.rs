@@ -393,8 +393,9 @@ impl ParseMolecule for CifFile {
     }
 
     /// Skip reading some lines.
-    fn seek_line(&self) -> Option<Box<dyn Fn(&str) -> bool>> {
-        Some(Box::new(|line| line.starts_with("data_")))
+    fn pre_read_hook(&self, mut r: TextReader<FileReader>) -> TextReader<FileReader> {
+        r.seek_line(|line| line.starts_with("data_"));
+        r
     }
 }
 // impl chemfile:1 ends here

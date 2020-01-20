@@ -76,9 +76,9 @@ pub(self) trait ParseMolecule {
     /// parse molecule from string slice in a part of chemical file.
     fn parse_molecule(&self, input: &str) -> Result<Molecule>;
 
-    /// Seek the position of a specific line.
-    fn seek_line(&self) -> Option<Box<dyn Fn(&str) -> bool>> {
-        None
+    /// Hook before start reading.
+    fn pre_read_hook(&self, r: TextReader<FileReader>) -> TextReader<FileReader> {
+        r
     }
 }
 // chemical file:1 ends here
@@ -110,12 +110,8 @@ where
     type IterMolecule = ParsedMolecules<Self>;
 
     /// Return an iterator over parsed molecules from reader `r`.
-    fn parse_molecules(&self, mut r: TextReader<FileReader>) -> Self::IterMolecule {
-        if let Some(skip) = self.seek_line() {
-            if r.seek_line(skip).is_err() {
-                error!("skip reading lines error");
-            }
-        }
+    fn parse_molecules(&self, r: TextReader<FileReader>) -> Self::IterMolecule {
+        let mut r = self.pre_read_hook(r);
         ParsedMolecules {
             partitions: r.partitions(*self),
             parser: *self,
