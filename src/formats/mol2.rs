@@ -440,6 +440,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 // impl chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+#[derive(Copy, Clone, Debug)]
 pub struct Mol2File();
 
 impl ChemicalFile for Mol2File {
@@ -462,13 +463,30 @@ impl ParseMolecule for Mol2File {
         Ok(mol)
     }
 
-    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
-        Box::new(|line| line.starts_with("@<TRIPOS>MOLECULE"))
-    }
-
     /// Skip reading some lines.
     fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
         Some(Box::new(|line| line.starts_with("@<TRIPOS>MOLECULE")))
     }
 }
 // impl chemfile:1 ends here
+
+// impl partition
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
+impl Partition for Mol2File {
+    fn read_next(&self, context: ReadContext) -> bool {
+        !context.next_line().starts_with("@<TRIPOS>MOLECULE")
+    }
+}
+
+#[test]
+fn test_mol2() -> Result<()> {
+    let f = "./tests/files/mol2/multi-obabel.mol2";
+    let mols = Mol2File().parse_molecules_from_path(f).unwrap();
+    for m in mols {
+        dbg!(m?.natoms());
+    }
+
+    Ok(())
+}
+// impl partition:1 ends here

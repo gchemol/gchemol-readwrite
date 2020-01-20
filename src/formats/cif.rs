@@ -66,7 +66,7 @@ fn read_cell_params(s: &str) -> IResult<&str, Vec<(&str, f64)>> {
 }
 
 fn parse_cell(s: &str) -> Result<[f64; 6]> {
-    let (_, values) = read_cell_params(s).map_err(|e| format_err!("read cell failure"))?;
+    let (_, values) = read_cell_params(s).map_err(|e| format_err!("read cell failure: {:?}", s))?;
 
     let d: std::collections::HashMap<_, _> = values.into_iter().collect();
     debug_assert!(d.len() >= 6, "missing cell params: {:?}", d);
@@ -191,7 +191,7 @@ fn parse_atoms(s: &str) -> Result<Vec<Atom>> {
     // TODO: column index to element symbol, which is optional
     let isym = *table.get(&"type_symbol").expect("atom symbol col");
 
-    let (_, rows) = read_atom_site_rows(r).unwrap();
+    let (_, rows) = read_atom_site_rows(r).map_err(|e| format_err!("{}", e))?;
     let mut atoms = vec![];
     for row in rows {
         // sanity check
@@ -263,13 +263,13 @@ fn parse_molecule(s: &str) -> Result<Molecule> {
     for part in r.split("loop_\n") {
         // cell parameters
         if part.contains("_cell_length_a") {
-            let [a, b, c, alpha, beta, gamma] = parse_cell(&part)?;
+            let [a, b, c, alpha, beta, gamma] = parse_cell(&part.trim_start())?;
             let cell = Lattice::from_params(a, b, c, alpha, beta, gamma);
             mol.set_lattice(cell);
         }
         // atom sites
         if part.contains("_atom_site_fract_x") {
-            let atoms = parse_atoms(&part)?;
+            let atoms = parse_atoms(&part.trim_start())?;
             let atoms = (1..).zip(atoms.into_iter());
             mol.add_atoms_from(atoms);
         }
@@ -370,6 +370,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 // impl chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+#[derive(Clone, Copy, Debug)]
 pub struct CifFile();
 
 impl ChemicalFile for CifFile {
@@ -391,13 +392,19 @@ impl ParseMolecule for CifFile {
         parse_molecule(input)
     }
 
-    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
-        Box::new(|line| line.starts_with("data_"))
-    }
-
     /// Skip reading some lines.
     fn seek_line(&self) -> Option<Box<Fn(&str) -> bool>> {
         Some(Box::new(|line| line.starts_with("data_")))
     }
 }
 // impl chemfile:1 ends here
+
+// impl partition
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
+impl Partition for CifFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        !context.next_line().starts_with("data_")
+    }
+}
+// impl partition:1 ends here

@@ -11,6 +11,7 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
 use super::parser::*;
+use super::*;
 // imports:1 ends here
 
 // cell
@@ -153,3 +154,35 @@ fn test_poscar_position() {
     assert_eq!(None, sflags);
 }
 // coordinates:1 ends here
+
+// chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
+#[derive(Clone, Copy, Debug)]
+pub struct PoscarFile();
+
+impl ChemicalFile for PoscarFile {
+    fn ftype(&self) -> &str {
+        "vasp/poscar"
+    }
+
+    fn possible_extensions(&self) -> Vec<&str> {
+        vec!["POSCAR", "CONTCAR", ".poscar", ".vasp"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        // Ok(format_molecule(mol))
+        todo!()
+    }
+}
+
+// read all available stream at once
+impl Partition for PoscarFile {}
+
+impl ParseMolecule for PoscarFile {
+    fn parse_molecule(&self, input: &str) -> Result<Molecule> {
+        // parse_molecule(input)
+        todo!()
+    }
+}
+// chemfile:1 ends here

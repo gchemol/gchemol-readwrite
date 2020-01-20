@@ -158,6 +158,7 @@ fn format_molecule() {
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*xyz][xyz:1]]
 /// Classical XYZ format
+#[derive(Copy, Clone, Debug)]
 pub(super) struct XyzFile();
 
 impl ChemicalFile for XyzFile {
@@ -203,11 +204,6 @@ impl ParseMolecule for XyzFile {
     fn parse_molecule(&self, input: &str) -> Result<Molecule> {
         parse_molecule(input, false)
     }
-
-    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
-        let marker = |line: &str| line.trim().parse::<usize>().is_ok();
-        Box::new(marker)
-    }
 }
 // xyz:1 ends here
 
@@ -215,18 +211,13 @@ impl ParseMolecule for XyzFile {
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*plain xyz][plain xyz:1]]
 /// Plain xyz coordinates with atom symbols (no atom count line and title line)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(super) struct PlainXyzFile();
 
 impl ParseMolecule for PlainXyzFile {
     fn parse_molecule(&self, input: &str) -> Result<Molecule> {
         // remove starting empty line
         parse_molecule(input.trim_start(), true)
-    }
-
-    fn mark_bunch(&self) -> Box<Fn(&str) -> bool> {
-        let marker = |line: &str| line.trim().is_empty();
-        Box::new(marker)
     }
 }
 
@@ -264,3 +255,19 @@ impl ChemicalFile for PlainXyzFile {
     }
 }
 // plain xyz:1 ends here
+
+// impl partition
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
+impl Partition for XyzFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        !context.next_line().trim().parse::<usize>().is_ok()
+    }
+}
+
+impl Partition for PlainXyzFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        !context.this_line().trim().is_empty()
+    }
+}
+// impl partition:1 ends here
