@@ -155,6 +155,205 @@ fn test_poscar_position() {
 }
 // coordinates:1 ends here
 
+// parse molecule
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
+/// Read Molecule from stream in VASP/POSCAR format
+pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
+    let read_ion_positions = many1(poscar_position);
+    do_parse!(
+        s,
+        title            : read_until_eol        >> // system title
+        lattice_constant : double >> eol         >> // lattice constant
+        cell_vectors     : poscar_cell_vectors   >> // lattice vectors
+        ion_types        : poscar_ion_types      >> // ion types
+        select_direct    : poscar_select_direct  >> // selective line and direct line
+        ion_positions    : read_ion_positions    >> // ion positions
+    (
+        {
+            let selective_dynamics = select_direct.0;
+            let direct_coordinates = select_direct.1;
+
+            let mut mol = Molecule::new(title.trim());
+            let mut lat = Lattice::new(cell_vectors);
+            let x = lat.to_cart([0.0; 3]);
+            // lat.scale_by(lattice_constant);
+
+            let mut symbols = vec![];
+            let (syms, nums) = ion_types;
+
+            for (&sym, &num) in syms.iter().zip(nums.iter()) {
+                for _ in 0..num {
+                    symbols.push(sym);
+                }
+            }
+
+            if symbols.len() != ion_positions.len() {
+                eprintln!("WARNING: some ions data not correctly parsed!");
+            }
+
+            for (i, (&sym, (pos, sflags))) in symbols.iter().zip(ion_positions).enumerate() {
+                let pos: Vector3f = if direct_coordinates {
+                    lat.to_cart(pos)
+                } else {
+                    pos.into()
+                };
+                let mut a = Atom::new(sym, pos);
+                // FIXME: just a temporary workaround
+                // if sflags.is_some() {
+                //     a.properties.store(POSCAR_SFLAGS_KEY, sflags.unwrap());
+                // };
+                mol.add_atom(i+1, a);
+            }
+            mol.set_lattice(lat);
+            mol
+        }
+    )
+    )
+}
+
+#[test]
+fn test_poscar_molecule() {
+    let lines = "title
+1.0
+ 21.23300000  0.00000000  0.00000000
+  0.00000000 26.60400000  0.00000000
+  0.00000000  0.00000000 12.67600000
+ O    Si   C    N    H
+225  112   8    1    19
+Selective dynamics
+Direct
+     0.05185     0.39121     0.29921  T T T # O
+     0.81339     0.57337     0.68777  T T T # O
+     0.73422     0.23229     0.85313  T T T # O
+     0.02246     0.05156     0.49349  T T T # O
+     0.64451     0.66726     0.17130  T T T # O
+     0.05185     0.07337     0.29921  T T T # O
+     0.60095     0.57471     0.17096  T T T # O
+     0.64451     0.66726     0.81569  T T T # O
+     0.33416     0.64745     0.88951  T T T # O
+     0.33416     0.31713     0.09747  T T T # O
+     0.93262     0.92263     0.99349  T T T # O
+     0.43262     0.79195     0.99349  T T T # O
+     0.73422     0.73229     0.13386  T T T # O
+     0.22073     0.66726     0.81569  T T T # O
+\n";
+
+    let (_, mol) = parse_poscar_molecule(lines).expect("poscar molecule");
+    assert_eq!(14, mol.natoms());
+    assert!(mol.lattice.is_some());
+}
+// parse molecule:1 ends here
+
+// format molecule
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format molecule][format molecule:1]]
+// const POSCAR_SFLAGS_KEY: &str = "vasp/poscar/sflags";
+
+fn format_molecule(mol: &Molecule) -> String {
+    let mut lines = String::new();
+    let title = mol.title();
+
+    lines.push_str(&format!("{}\n", title));
+    lines.push_str("1.0\n");
+    let mut lattice = mol.lattice.expect("poscar lattice");
+    let va = lattice.vector_a();
+    let vb = lattice.vector_b();
+    let vc = lattice.vector_c();
+
+    for v in [va, vb, vc].into_iter() {
+        let line = format!("{:12.8}{:12.8}{:12.8}\n", v[0], v[1], v[2]);
+        lines.push_str(&line);
+    }
+
+    // atom symbols and counts
+    let mut line1 = String::new();
+    let mut line2 = String::new();
+    for (s, n) in count_symbols(mol.symbols().collect()) {
+        line1.push_str(&format!(" {:^4}", s));
+        line2.push_str(&format!(" {:^4}", n));
+    }
+    lines.push_str(&format!("{}\n", line1));
+    lines.push_str(&format!("{}\n", line2));
+
+    // write fractional coordinates for improving accuracy
+    lines.push_str("Selective dynamics\nDirect\n");
+    for (_, a) in mol.atoms() {
+        let p = lattice.to_frac(a.position());
+        // FIXME: just a temporary workaround
+        // let line = if a.properties.contains_key(POSCAR_SFLAGS_KEY) {
+        //     let sflags: [bool; 3] = a
+        //         .properties
+        //         .load(POSCAR_SFLAGS_KEY)
+        //         .expect("vasp selective_dynamics flags");
+        //     format!(
+        //         "{x:18.12} {y:18.12} {z:18.12} {fx} {fy} {fz}\n",
+        //         x = x,
+        //         y = y,
+        //         z = z,
+        //         fx = if sflags[0] { "T" } else { "F" },
+        //         fy = if sflags[1] { "T" } else { "F" },
+        //         fz = if sflags[2] { "T" } else { "F" },
+        //     )
+        // } else {
+        //     format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = x, y = y, z = z)
+        // };
+        let line = format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = p.x, y = p.y, z = p.z);
+        lines.push_str(&line);
+    }
+
+    // final blank line
+    lines.push_str("\n");
+    // TODO: write velocities
+
+    lines
+}
+
+// Panic if symbols is empty
+fn count_symbols(symbols: Vec<&str>) -> Vec<(&str, usize)> {
+    let mut lines = String::new();
+
+    let mut syms1 = symbols.iter();
+    let mut syms2 = symbols.iter().skip(1);
+    let mut counts = vec![];
+
+    let mut c = 1;
+    let mut s = symbols[0];
+    for (&sym1, &sym2) in syms1.zip(syms2) {
+        if sym2 == sym1 {
+            c += 1;
+        } else {
+            counts.push((sym1, c));
+            c = 1;
+        }
+        s = sym2;
+    }
+    // append the last piece
+    counts.push((s, c));
+
+    counts
+}
+
+#[test]
+fn test_poscar_symbols_counts() {
+    let symbols = ["C", "C", "C", "H", "O", "O", "C"];
+    let x = count_symbols(symbols.to_vec());
+    assert_eq!([("C", 3), ("H", 1), ("O", 2), ("C", 1)].to_vec(), x);
+
+    let symbols = ["C", "C"];
+    let x = count_symbols(symbols.to_vec());
+    assert_eq!([("C", 2)].to_vec(), x);
+
+    let symbols = ["C", "H"];
+    let x = count_symbols(symbols.to_vec());
+    assert_eq!([("C", 1), ("H", 1)].to_vec(), x);
+
+    let symbols = ["C"];
+    let x = count_symbols(symbols.to_vec());
+    assert_eq!([("C", 1)].to_vec(), x);
+}
+// format molecule:1 ends here
+
 // chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
@@ -181,8 +380,23 @@ impl Partition for PoscarFile {}
 
 impl ParseMolecule for PoscarFile {
     fn parse_molecule(&self, input: &str) -> Result<Molecule> {
-        // parse_molecule(input)
-        todo!()
+        let (_, mol) = parse_poscar_molecule(input).map_err(|e| format_err!("parse POSCAR format failure: {:?}", e))?;
+        Ok(mol)
     }
 }
 // chemfile:1 ends here
+
+// test
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
+#[test]
+fn test_vasp_poscar_parse() -> Result<()> {
+    let poscar = PoscarFile();
+    let mols: Result<Vec<_>> = poscar.parse_molecules_from_path("tests/files/vasp/POSCAR")?.collect();
+    let mols = mols?;
+    assert_eq!(1, mols.len());
+    assert_eq!(365, mols[0].natoms());
+
+    Ok(())
+}
+// test:1 ends here

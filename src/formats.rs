@@ -22,7 +22,7 @@ type FileReader = BufReader<File>;
 // exports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
-pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule};
+pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule, Vector3f};
 pub(self) use guts::prelude::*;
 
 pub(self) mod parser {
@@ -111,6 +111,7 @@ where
 
     /// Return an iterator over parsed molecules from reader `r`.
     fn parse_molecules(&self, r: TextReader<FileReader>) -> Self::IterMolecule {
+        // apply reading hook
         let mut r = self.pre_read_hook(r);
         ParsedMolecules {
             partitions: r.partitions(*self),
