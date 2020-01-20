@@ -172,7 +172,11 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> 
     let p4 = parser!(found, path, self::cif::CifFile);
     let p5 = parser!(found, path, self::gaussian_input::GaussianInputFile);
     let p6 = parser!(found, path, self::vasp_input::PoscarFile);
-    p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6)
+    let p7 = parser!(found, path, self::sdf::SdfFile);
+    if !found {
+        error!("No available parser found for {:?}", path);
+    }
+    p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6).chain(p7)
 }
 // read chemfile:1 ends here
 
@@ -213,7 +217,7 @@ macro_rules! avail_parsers {
             Box::new(self::cif::CifFile()),
             Box::new(self::vasp_input::PoscarFile()),
             Box::new(self::gaussian_input::GaussianInputFile()),
-            // Box::new(self::sdf::SdfFile()),
+            Box::new(self::sdf::SdfFile()),
             // Box::new(self::pdb::PdbFile()),
         ]
     };

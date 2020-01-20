@@ -140,3 +140,112 @@ fn test_sdf_bond() {
     assert_eq!(line[..9], line2[..9]);
 }
 // bonds:1 ends here
+
+// molecule
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
+pub fn get_molecule_from(input: &str) -> IResult<&str, Molecule> {
+    let read_atoms = many1(get_atom_from);
+    let read_bonds = many0(get_bond_from);
+    let (input, mol) = do_parse!(
+        input,
+        title   : read_line     >> // molecule title
+        software: read_line     >> // version?
+        comment : read_line     >> // user comments
+        counts  : counts_line   >> // number of atoms and bonds
+        atoms   : read_atoms    >> // atoms
+        bonds   : read_bonds    >> // bonds
+        (
+            {
+                let naa = atoms.len();
+                let nbb = bonds.len();
+                let (na, nb) = counts;
+                if na != naa {
+                    eprintln!("expect {} atoms, but found {}", na, naa);
+                }
+                if nb != nbb {
+                    eprintln!("expect {} bonds, but found {}", nb, nbb);
+                }
+
+                let mut mol = Molecule::from_atoms(atoms);
+                mol.set_title(title);
+
+                for (i, j, b) in bonds {
+                    mol.add_bond(i, j, b);
+                }
+                mol
+            }
+        )
+    )?;
+
+    Ok((input, mol))
+}
+
+fn format_molecule(mol: &Molecule) -> String {
+    let mut lines = String::new();
+
+    // molecule title
+    lines.push_str(&format!("{}\n", mol.title()));
+    // software
+    lines.push_str("gchemol\n");
+    // comment
+    lines.push_str("\n");
+    // counts line
+    let line = format!(
+        "{natoms:3}{nbonds:3}  0  0  0  0  0  0  0  0999 V2000 \n",
+        natoms = mol.natoms(),
+        nbonds = mol.nbonds()
+    );
+
+    lines.push_str(&line);
+
+    for (i, a) in mol.atoms() {
+        lines.push_str(&format_atom(i, a));
+    }
+
+    for (i, j, b) in mol.bonds() {
+        lines.push_str(&format_bond(i, j, &b));
+    }
+
+    lines.push_str("M  END\n$$$$\n");
+
+    lines
+}
+// molecule:1 ends here
+
+// chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
+#[derive(Clone, Copy, Debug)]
+pub struct SdfFile();
+
+impl ChemicalFile for SdfFile {
+    fn ftype(&self) -> &str {
+        "text/mol"
+    }
+
+    fn possible_extensions(&self) -> Vec<&str> {
+        vec![".sd", ".sdf", ".mol"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        if mol.lattice.is_some() {
+            eprintln!("WARNING: cannot render Lattice in SDF format!");
+        }
+        Ok(format_molecule(mol))
+    }
+}
+
+impl ParseMolecule for SdfFile {
+    fn parse_molecule(&self, input: &str) -> Result<Molecule> {
+        let (_, mol) = get_molecule_from(input).map_err(|e| format_err!("parse SDF format failure: {:?}", e))?;
+        Ok(mol)
+    }
+}
+
+impl Partition for SdfFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        context.this_line() != "$$$$\n"
+    }
+}
+// chemfile:1 ends here
