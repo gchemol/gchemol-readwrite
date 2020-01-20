@@ -226,6 +226,7 @@ macro_rules! avail_parsers {
             Box::new(self::mol2::Mol2File()),
             Box::new(self::cif::CifFile()),
             Box::new(self::vasp_input::PoscarFile()),
+            Box::new(self::gaussian_input::GaussianInputFile()),
             // Box::new(self::sdf::SdfFile()),
             // Box::new(self::pdb::PdbFile()),
         ]

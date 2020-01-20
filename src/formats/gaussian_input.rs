@@ -358,9 +358,9 @@ fn test_gjf_connectivity() {
 }
 // connectivity specs:1 ends here
 
-// parse molecule
+// parse
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
 fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
     let link0 = opt(link0_section);
     do_parse!(
@@ -398,7 +398,7 @@ fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
 }
 
 // FIXME: how about gaussian extra input
-pub(crate) fn parse_molecule(s: &str) -> Result<Molecule> {
+pub fn parse_molecule(s: &str) -> Result<Molecule> {
     let (r, title) = parse_molecule_meta(s).map_err(|e| format_err!("{}", e))?;
     // We replace comma with space in molecular specification part for easy
     // parsing.
@@ -467,7 +467,112 @@ Required
     assert_eq!(17, mol.natoms());
     assert_eq!(16, mol.nbonds());
 }
-// parse molecule:1 ends here
+// parse:1 ends here
+
+// format
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+// TODO: atom properties
+fn format_atom(a: &Atom) -> String {
+    let [x, y, z] = a.position();
+    format!(
+        " {symbol:15} {x:14.8} {y:14.8} {z:14.8}\n",
+        symbol = a.symbol(),
+        x = x,
+        y = y,
+        z = z,
+    )
+}
+
+// string representation in gaussian input file format
+fn format_molecule(mol: &Molecule) -> String {
+    let mut lines = String::new();
+
+    let link0 = "%nproc=1\n%mem=20MW";
+    let route = "#p sp scf=tight HF/3-21G* geom=connect test";
+    lines.push_str(&format!("{}\n{}\n", link0, route));
+    lines.push_str("\n");
+
+    // title section
+    lines.push_str("Title Card Required\n");
+    lines.push_str("\n");
+
+    // TODO: take from molecule
+    lines.push_str("0 1\n");
+    for (_, a) in mol.atoms() {
+        let line = format_atom(&a);
+        lines.push_str(&line);
+    }
+
+    // crystal vectors
+    if let Some(lattice) = mol.lattice {
+        // let va = lattice.vector_a();
+        // let vb = lattice.vector_b();
+        // let vc = lattice.vector_c();
+        for l in lattice.vectors().iter() {
+            lines.push_str(&format!(" TV              {:14.8}{:14.8}{:14.8}\n", l.x, l.y, l.z));
+        }
+    }
+
+    // connectivity
+    lines.push_str("\n");
+    let mut map = HashMap::new();
+    for (i, j, b) in mol.bonds() {
+        let mut neighbors = map.entry(i).or_insert(vec![]);
+        neighbors.push((j, b.order()));
+    }
+    for (i, a) in mol.atoms() {
+        let mut line = format!("{:<5}", i);
+        if let Some(neighbors) = map.get(&i) {
+            for (j, o) in neighbors {
+                line.push_str(&format!(" {:<} {:<.1}", j, o));
+            }
+        }
+        lines.push_str(&format!("{}\n", line));
+    }
+
+    lines.push_str("\n");
+    lines
+}
+// format:1 ends here
+
+// impl chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+#[derive(Clone, Copy, Debug)]
+/// plain xyz coordinates with atom symbols
+pub struct GaussianInputFile();
+
+/// References
+/// http://gaussian.com/input/?tabid=0
+impl ChemicalFile for GaussianInputFile {
+    fn ftype(&self) -> &str {
+        "gaussian/input"
+    }
+
+    fn possible_extensions(&self) -> Vec<&str> {
+        vec![".gjf", ".com", ".gau"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        Ok(format_molecule(mol))
+    }
+}
+
+impl ParseMolecule for GaussianInputFile {
+    fn parse_molecule(&self, input: &str) -> Result<Molecule> {
+        parse_molecule(input)
+    }
+}
+
+impl Partition for GaussianInputFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        let line = context.next_line();
+        let link1 = "--link1--\n";
+        line.to_lowercase() != link1
+    }
+}
+// impl chemfile:1 ends here
 
 // test
 
@@ -475,24 +580,11 @@ Required
 #[test]
 fn test_format_gaussian_input() -> Result<()> {
     let f = "./tests/files/gaussian/test1036.com";
-    let reader = TextReader::from_path(f)?;
-
-    let link1_label = "--link1--\n";
-    let link1 = |line: &str| line.to_lowercase() == link1_label;
-    let bunches = reader.terminated_bunches(link1);
-    let mut part = String::new();
-    for lines in bunches {
-        if part.ends_with(link1_label) {
-            let n = part.len() - link1_label.len();
-            part.truncate(n)
-        }
-        if let Ok(mol) = parse_molecule(&part) {
-            println!("parsed molecule containing {:} atoms.", mol.natoms());
-        }
-
-        // reset buf
-        part.clear();
-    }
+    let parser = GaussianInputFile();
+    let mols: Vec<_> = parser.parse_molecules_from_path(f)?.collect();
+    assert_eq!(mols.len(), 2);
+    assert!(mols[0].is_ok());
+    assert!(mols[1].is_err());
 
     Ok(())
 }
