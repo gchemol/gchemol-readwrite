@@ -1,19 +1,3 @@
-// header
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
-//===============================================================================#
-//   DESCRIPTION:  basic read & write support for molecular file
-//
-//       OPTIONS:  ---
-//  REQUIREMENTS:  ---
-//         NOTES:  ---
-//        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
-//       LICENCE:  GPL version 3
-//       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-21 Tue 14:04>
-//===============================================================================#
-// header:1 ends here
-
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
