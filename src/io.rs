@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-21 Tue 14:00>
+//       UPDATED:  <2020-01-21 Tue 14:04>
 //===============================================================================#
 // header:1 ends here
 
@@ -98,7 +98,7 @@ pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
     Ok(mols.filter_map(|parsed| match parsed {
         Ok(mol) => Some(mol),
         Err(e) => {
-            eprintln!("found parsing error for file: {:?}", e);
+            eprintln!("found parsing error: {:?}", e);
             None
         }
     }))
@@ -117,7 +117,7 @@ pub fn read_format<P: AsRef<Path>>(path: P, fmt: &str) -> Result<impl Iterator<I
     Ok(mols.filter_map(|parsed| match parsed {
         Ok(mol) => Some(mol),
         Err(e) => {
-            eprintln!("found parsing error for format {}: {:?}", fmt, e);
+            eprintln!("found parsing error: {:?}", e);
             None
         }
     }))

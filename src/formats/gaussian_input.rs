@@ -567,25 +567,9 @@ impl ParseMolecule for GaussianInputFile {
 
 impl Partition for GaussianInputFile {
     fn read_next(&self, context: ReadContext) -> bool {
-        let line = context.next_line();
+        let line = context.this_line();
         let link1 = "--link1--\n";
         line.to_lowercase() != link1
     }
 }
 // impl chemfile:1 ends here
-
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
-#[test]
-fn test_format_gaussian_input() -> Result<()> {
-    let f = "./tests/files/gaussian/test1036.com";
-    let parser = GaussianInputFile();
-    let mols: Vec<_> = parser.parse_molecules_from_path(f)?.collect();
-    assert_eq!(mols.len(), 2);
-    assert!(mols[0].is_ok());
-    assert!(mols[1].is_err());
-
-    Ok(())
-}
-// test:1 ends here

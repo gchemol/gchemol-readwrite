@@ -385,18 +385,3 @@ impl ParseMolecule for PoscarFile {
     }
 }
 // chemfile:1 ends here
-
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
-#[test]
-fn test_vasp_poscar_parse() -> Result<()> {
-    let poscar = PoscarFile();
-    let mols: Result<Vec<_>> = poscar.parse_molecules_from_path("tests/files/vasp/POSCAR")?.collect();
-    let mols = mols?;
-    assert_eq!(1, mols.len());
-    assert_eq!(365, mols[0].natoms());
-
-    Ok(())
-}
-// test:1 ends here
