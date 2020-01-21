@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-20 Mon 21:23>
+//       UPDATED:  <2020-01-21 Tue 14:00>
 //===============================================================================#
 // header:1 ends here
 
@@ -73,8 +73,8 @@ impl ToFile for str {
 impl FromFile for Molecule {
     /// Construct molecule from external text file
     fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        if let Some(mol) = read(path).last() {
-            return Ok(mol?);
+        if let Some(mol) = read(path)?.last() {
+            return Ok(mol);
         }
         bail!("No molecule found!");
     }
@@ -93,19 +93,34 @@ impl ToFile for Molecule {
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*api][api:1]]
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
-pub fn read<P: AsRef<Path>>(path: P) -> impl Iterator<Item = Result<Molecule>> {
-    crate::formats::read_chemical_file(path, None)
+pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
+    let mols = crate::formats::read_chemical_file(path, None)?;
+    Ok(mols.filter_map(|parsed| match parsed {
+        Ok(mol) => Some(mol),
+        Err(e) => {
+            eprintln!("found parsing error for file: {:?}", e);
+            None
+        }
+    }))
 }
 
 // https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result
 /// Read all molecules into a Vec from `path`.
 pub fn read_all<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
-    read(path).collect()
+    let mols: Vec<_> = read(path)?.collect();
+    Ok(mols)
 }
 
 /// Read molecules in specific chemical file format.
-pub fn read_format<P: AsRef<Path>>(path: P, fmt: &str) -> impl Iterator<Item = Result<Molecule>> {
-    crate::formats::read_chemical_file(path, Some(fmt))
+pub fn read_format<P: AsRef<Path>>(path: P, fmt: &str) -> Result<impl Iterator<Item = Molecule>> {
+    let mols = crate::formats::read_chemical_file(path, Some(fmt))?;
+    Ok(mols.filter_map(|parsed| match parsed {
+        Ok(mol) => Some(mol),
+        Err(e) => {
+            eprintln!("found parsing error for format {}: {:?}", fmt, e);
+            None
+        }
+    }))
 }
 
 /// Write molecules into path. File format will be determined according to the

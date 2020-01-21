@@ -3,7 +3,7 @@
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
 // parses the following record types in a PDB file:
 //
-// CRYST
+// CRYST1
 // ATOM or HETATM
 // TER
 // END or ENDMDL
@@ -331,7 +331,7 @@ fn test_pdb_read_bond() {
 }
 
 fn read_bonds(s: &str) -> IResult<&str, Vec<(usize, usize)>> {
-    let bond_list = many0(read_bond_record);
+    let bond_list = many1(read_bond_record);
     do_parse!(
         s,
         bonds: bond_list >> (bonds.into_iter().flat_map(|x| x).collect())
@@ -355,3 +355,177 @@ CONECT 2043 2042 2044
     assert_eq!(2, x.len());
 }
 // bond records:1 ends here
+
+// parse
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
+// quick jump to starting position
+fn jump1(s: &str) -> nom::IResult<&str, ()> {
+    let possible_tags = alt((tag("CRYST1"), tag("ATOM  "), tag("HETATM")));
+    let (r, _) = many_till(read_line, peek(possible_tags))(s)?;
+
+    Ok((r, ()))
+}
+
+fn read_molecule(s: &str) -> nom::IResult<&str, Molecule> {
+    let read_lattice = opt(read_lattice);
+    let read_bonds = opt(read_bonds);
+    // recognize optional record between Atom and Bond
+    let sep_atoms_bonds = opt(alt((preceded(tag("TER"), read_line), tag("END\n"))));
+    do_parse!(
+        s,
+        jump1 >>             // seeking
+        lat: read_lattice >> // crystal info, optional
+        atoms: read_atoms >> // atoms, required
+        sep_atoms_bonds   >> // separator, optinal
+        bonds: read_bonds >> // bonds, optional
+        ({
+            // assign atoms
+            let mut mol = Molecule::new("for pdb");
+            mol.add_atoms_from(atoms);
+
+            // assign lattice
+            if let Some(lat) = lat {
+                mol.set_lattice(lat);
+            }
+
+            // assign bonds
+            if let Some(bonds) = bonds {
+                // FIXME: bond type
+                let bonds = bonds.into_iter().map(|(u, v)| (u, v, Bond::single()));
+                mol.add_bonds_from(bonds);
+            }
+            mol
+        })
+    )
+}
+
+#[test]
+fn test_pdb_molecule() {
+    let lines = "\
+SCALE3      0.000000  0.000000  0.132153        0.00000
+ATOM      1  O2  MOL     2      -4.808   4.768   2.469  1.00  0.00           O
+ATOM      2  O3  MOL     2      -6.684   6.549   1.983  1.00  0.00           O
+ATOM      3 T1   MOL     2      -5.234   6.009   1.536  1.00  0.00          Si1+
+ATOM      4  O1  MOL     2      -4.152  10.936   1.688  1.00  0.00           O
+ATOM      5  O1  MOL     2      -4.150  10.935   1.688  1.00  0.00           O
+ATOM      6  O2  MOL     2      -1.725  11.578   2.469  1.00  0.00           O
+ATOM      7  O2  MOL     2      -9.164  10.843   2.469  1.00  0.00           O
+ATOM      8 T1   MOL     2      -2.587  10.589   1.536  1.00  0.00          Si1+
+ATOM      9 T1   MOL     2      -7.877  10.591   1.536  1.00  0.00          Si1+
+ATOM     10  O2  MOL     2      -1.725  -6.548   2.469  1.00  0.00           O
+ATOM     11  O3  MOL     2      -2.330  -9.063   1.983  1.00  0.00           O
+ATOM     12 T1   MOL     2      -2.587  -7.537   1.536  1.00  0.00          Si1+
+ATOM     13  O1  MOL     2      -7.395  -9.064   1.688  1.00  0.00           O
+TER     367
+CONECT    2    4
+CONECT    3    4
+END\n\n";
+
+    let (r, v) = read_molecule(lines).expect("pdb molecule");
+    assert_eq!(13, v.natoms());
+    assert_eq!(2, v.nbonds());
+
+    let lines = "\
+REMARK   Created:  2018-10-22T12:36:28Z
+SCALE3      0.000000  0.000000  0.132153        0.00000
+ATOM      1  O2  MOL     2      -4.808   4.768   2.469  1.00  0.00           O
+ATOM      2  O3  MOL     2      -6.684   6.549   1.983  1.00  0.00           O
+ATOM      3 T1   MOL     2      -5.234   6.009   1.536  1.00  0.00          Si1+
+ATOM      4  O1  MOL     2      -4.152  10.936   1.688  1.00  0.00           O
+ATOM      5  O1  MOL     2      -4.150  10.935   1.688  1.00  0.00           O
+ATOM      6  O2  MOL     2      -1.725  11.578   2.469  1.00  0.00           O
+ATOM      7  O2  MOL     2      -9.164  10.843   2.469  1.00  0.00           O
+ATOM      8 T1   MOL     2      -2.587  10.589   1.536  1.00  0.00          Si1+
+ATOM      9 T1   MOL     2      -7.877  10.591   1.536  1.00  0.00          Si1+
+ATOM     10  O2  MOL     2      -1.725  -6.548   2.469  1.00  0.00           O
+ATOM     11  O3  MOL     2      -2.330  -9.063   1.983  1.00  0.00           O
+ATOM     12 T1   MOL     2      -2.587  -7.537   1.536  1.00  0.00          Si1+
+ATOM     13  O1  MOL     2      -7.395  -9.064   1.688  1.00  0.00           O
+\n\n\n";
+
+    let (r, v) = read_molecule(&lines).expect("pdb molecule no bonds");
+    assert_eq!(13, v.natoms());
+    assert_eq!(0, v.nbonds());
+    let txt = "\
+CRYST1   54.758   54.758   55.584  90.00  90.00  90.00 P 1           1
+ATOM      1  SI1 SIO2X   1       1.494   1.494   0.000  1.00  0.00      UC1 SI
+ATOM      2  O11 SIO2X   1       1.194   0.514   1.240  1.00  0.00      UC1  O
+ATOM      3  SI2 SIO2X   1       3.484   3.484   3.474  1.00  0.00      UC1 SI
+ATOM      4  O12 SIO2X   1       3.784   4.464   4.714  1.00  0.00      UC1  O
+ATOM      5  SI3 SIO2X   1       0.995   3.983   1.737  1.00  0.00      UC1 SI
+ATOM      6  O13 SIO2X   1       1.975   3.683   2.977  1.00  0.00      UC1  O
+ATOM      7  SI4 SIO2X   1       3.983   0.995   5.211  1.00  0.00      UC1 SI
+ATOM      8  O14 SIO2X   1       3.003   1.295   6.451  1.00  0.00      UC1  O
+ATOM      9  O21 SIO2X   1       1.295   3.003   0.497  1.00  0.00      UC1  O
+ATOM     10  O22 SIO2X   1       3.683   1.975   3.971  1.00  0.00      UC1  O
+ATOM     11  O23 SIO2X   1       0.514   1.194   5.708  1.00  0.00      UC1  O
+ATOM     12  O24 SIO2X   1       4.464   3.784   2.234  1.00  0.00      UC1  O
+END\n
+";
+    let (_, v) = read_molecule(&txt).expect("pdb crystal");
+    assert_eq!(12, v.natoms());
+    assert!(v.lattice.is_some());
+}
+// parse:1 ends here
+
+// format
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+fn format_molecule(mol: &Molecule) -> String {
+    if mol.natoms() > 9999 {
+        eprintln!("PDB format is incapable for large molecule (natoms < 9999)");
+    }
+
+    // atoms
+    let mut lines = String::from("REMARK Created by gchemol\n");
+    for (i, a) in mol.atoms() {
+        let line = format_atom(i, a);
+        lines.push_str(&line);
+    }
+
+    // bonds
+    if mol.nbonds() > 0 {
+        lines.push_str(&format_bonds(&mol));
+    }
+
+    lines.push_str("END\n");
+
+    lines
+}
+// format:1 ends here
+
+// chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
+#[derive(Clone, Copy, Debug)]
+pub struct PdbFile();
+
+impl ChemicalFile for PdbFile {
+    fn ftype(&self) -> &str {
+        "text/pdb"
+    }
+
+    fn possible_extensions(&self) -> Vec<&str> {
+        vec![".pdb", ".ent"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        Ok(format_molecule(mol))
+    }
+}
+
+impl ParseMolecule for PdbFile {
+    fn parse_molecule(&self, input: &str) -> Result<Molecule> {
+        let (_, mol) = read_molecule(input).map_err(|e| format_err!("parse PDB format failure: {:?}", e))?;
+        Ok(mol)
+    }
+}
+
+impl Partition for PdbFile {
+    // for multi-model records
+    fn read_next(&self, context: ReadContext) -> bool {
+        context.this_line() != "ENDMDL\n"
+    }
+}
+// chemfile:1 ends here

@@ -145,10 +145,13 @@ where
 }
 // parse iter:1 ends here
 
-// read chemfile
+// read chemfile/adhoc
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
-pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> impl Iterator<Item = Result<Molecule>> {
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile/adhoc][read chemfile/adhoc:1]]
+pub(super) fn read_chemical_file<P: AsRef<Path>>(
+    path: P,
+    fmt: Option<&str>,
+) -> Result<impl Iterator<Item = Result<Molecule>>> {
     let path = path.as_ref();
     let mut found = false;
 
@@ -157,7 +160,10 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> 
             // early return when found the right parser
             if !$found && $ee().parsable($path) {
                 $found = true;
-                $ee().parse_molecules_from_path($path).ok()
+                let mols = $ee()
+                    .parse_molecules_from_path($path)
+                    .context("Open chemical file failed")?;
+                Some(mols)
             } else {
                 None
             }
@@ -173,12 +179,14 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(path: P, fmt: Option<&str>) -> 
     let p5 = parser!(found, path, self::gaussian_input::GaussianInputFile);
     let p6 = parser!(found, path, self::vasp_input::PoscarFile);
     let p7 = parser!(found, path, self::sdf::SdfFile);
+    let p8 = parser!(found, path, self::pdb::PdbFile);
     if !found {
-        error!("No available parser found for {:?}", path);
+        bail!("No available parser found for {:?}", path);
     }
-    p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6).chain(p7)
+
+    Ok(p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6).chain(p7).chain(p8))
 }
-// read chemfile:1 ends here
+// read chemfile/adhoc:1 ends here
 
 // write chemifile
 
@@ -218,7 +226,7 @@ macro_rules! avail_parsers {
             Box::new(self::vasp_input::PoscarFile()),
             Box::new(self::gaussian_input::GaussianInputFile()),
             Box::new(self::sdf::SdfFile()),
-            // Box::new(self::pdb::PdbFile()),
+            Box::new(self::pdb::PdbFile()),
         ]
     };
 }
