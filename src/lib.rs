@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-21 Tue 17:23>
+//       UPDATED:  <2020-01-28 Tue 11:09>
 //===============================================================================#
 // header:1 ends here
 
@@ -30,10 +30,4 @@ pub mod prelude {
 }
 
 pub use crate::io::{read, read_all, write};
-
-#[macro_use]
-extern crate handlebars;
-
-// FIXME: why must be located in lib.rs?
-handlebars_helper!(fgt: |x: f64, y: f64| x > y);
 // mods:1 ends here

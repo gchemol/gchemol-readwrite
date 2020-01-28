@@ -17,15 +17,11 @@ impl TemplateRendering for Molecule {
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use std::fs::File;
-
 use serde_json::json;
 use handlebars::*;
 use indexmap::{indexmap, IndexMap};
 
-use crate::io;
 use guts::prelude::*;
-
 use gchemol_core::{Atom, Molecule};
 // imports:1 ends here
 
@@ -94,6 +90,12 @@ fn format(
     Ok(())
 }
 // format float number:1 ends here
+
+// fgt
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*fgt][fgt:1]]
+handlebars_helper!(fgt: |x: f64, y: f64| x > y);
+// fgt:1 ends here
 
 // core
 
@@ -286,7 +288,7 @@ fn molecule_to_template_data(mol: &Molecule) -> serde_json::Value {
 pub fn render_molecule_with(mol: &Molecule, template: &str) -> Result<String> {
     let mut h = Handlebars::new();
     h.register_helper("format", Box::new(format));
-    h.register_helper("fgt", Box::new(crate::fgt));
+    h.register_helper("fgt", Box::new(fgt));
 
     let data = molecule_to_template_data(mol);
     h.render_template(template, &data)
