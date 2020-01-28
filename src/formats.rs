@@ -114,7 +114,7 @@ where
         // apply reading hook
         let mut r = self.pre_read_hook(r);
         ParsedMolecules {
-            partitions: r.partitions(*self),
+            partitions: r.partition_by(*self),
             parser: *self,
         }
     }

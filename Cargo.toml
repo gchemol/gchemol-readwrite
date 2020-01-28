@@ -13,7 +13,7 @@ serde = {version="1", features = ["derive"]}
 serde_json = "1.0"
 regex = "1"
 indexmap = "1.0"
-handlebars = "2"
+handlebars = "3"
 #guts = { git = "https://github.com/ybyygu/guts.git", branch="dev" }
 guts = { path = "../../guts" }
 gchemol-core = { path = "../gchemol-core" }
