@@ -32,8 +32,7 @@ impl TemplateRendering for Molecule {
         // possible extension in lowercase only
         match path.extension().and_then(|x| x.to_str()) {
             Some("hbs") => self::hbs::render_molecule_with(&self, &template),
-            Some("tera") => self::tera::render_molecule_with(&self, &template),
-            _ => bail!("Unkown template language: {:?}", path),
+            _ => self::tera::render_molecule_with(&self, &template),
         }
     }
 }
