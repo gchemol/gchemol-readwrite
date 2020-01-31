@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-28 Tue 17:37>
+//       UPDATED:  <2020-01-31 Fri 16:28>
 //===============================================================================#
 // header:1 ends here
 
@@ -23,8 +23,6 @@ mod formats;
 mod template;
 
 mod io;
-
-pub use crate::io::{read, read_all, write};
 // mods:1 ends here
 
 // exports
@@ -32,7 +30,10 @@ pub use crate::io::{read, read_all, write};
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
 pub mod prelude {
     pub use crate::io::FromFile;
+    pub use crate::io::StringIO;
     pub use crate::io::ToFile;
     pub use crate::template::TemplateRendering;
 }
+
+pub use crate::io::{read, read_all, read_from, write, write_format};
 // exports:1 ends here

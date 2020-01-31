@@ -145,9 +145,27 @@ where
 }
 // parse iter:1 ends here
 
-// read chemfile/adhoc
+// adhoc
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile/adhoc][read chemfile/adhoc:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*adhoc][adhoc:1]]
+use std::io::prelude::*;
+
+trait XXx {
+    type IterMolecule: Iterator<Item = Result<Molecule>>;
+
+    /// Return an iterator over parsed molecules from reader `r`.
+    fn parse_molecules<R: BufRead + Seek>(&self, r: TextReader<R>) -> Self::IterMolecule;
+
+    /// Hook before start reading.
+    fn pre_read_hook<R: BufRead + Seek>(&self, r: TextReader<R>) -> TextReader<R> {
+        r
+    }
+}
+// adhoc:1 ends here
+
+// read chemfile
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
 pub(super) fn read_chemical_file<P: AsRef<Path>>(
     path: P,
     fmt: Option<&str>,
@@ -158,12 +176,25 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(
     macro_rules! parser {
         ($found:expr, $path:expr, $ee:expr) => {
             // early return when found the right parser
-            if !$found && $ee().parsable($path) {
-                $found = true;
-                let mols = $ee()
-                    .parse_molecules_from_path($path)
-                    .context("Open chemical file failed")?;
-                Some(mols)
+            if !$found {
+                // check file type
+                if let Some(fmt) = fmt {
+                    if $ee().ftype() == fmt.to_lowercase() {
+                        $found = true;
+                    }
+                }
+                // check file extension
+                if !$found && $ee().parsable($path) {
+                    $found = true;
+                }
+                if $found {
+                    let mols = $ee()
+                        .parse_molecules_from_path($path)
+                        .with_context(|| format_err!("Open chemical file {:?} failed", $ee().ftype()))?;
+                    Some(mols)
+                } else {
+                    None
+                }
             } else {
                 None
             }
@@ -181,12 +212,12 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(
     let p7 = parser!(found, path, self::sdf::SdfFile);
     let p8 = parser!(found, path, self::pdb::PdbFile);
     if !found {
-        bail!("No available parser found for {:?}", path);
+        bail!("No available parser found for {:?}, {:?}", path, fmt);
     }
 
     Ok(p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6).chain(p7).chain(p8))
 }
-// read chemfile/adhoc:1 ends here
+// read chemfile:1 ends here
 
 // write chemifile
 
@@ -197,8 +228,6 @@ pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
     mols: impl IntoIterator<Item = &'a Molecule>,
     fmt: Option<&str>,
 ) -> Result<()> {
-    use std::fs::File;
-
     let path = path.as_ref();
     if let Some(cf) = guess_chemical_file_format(path, fmt) {
         let mut fp = File::create(path).with_context(|| format!("Failed to create file: {:?}", path))?;
@@ -207,9 +236,21 @@ pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
             let s = cf.format_molecule(mol)?;
             fp.write(s.as_bytes());
         }
+    } else {
+        bail!("No suitable chemical file format found for {:?}", path);
     }
 
     Ok(())
+}
+
+/// Return formatted representation of molecule in specific chemical file
+/// format.
+pub(super) fn format_as_chemical_file(mol: &Molecule, fmt: &str) -> Result<String> {
+    // FIXME: ugly
+    if let Some(cf) = guess_chemical_file_format(Path::new(""), Some(fmt)) {
+        return cf.format_molecule(mol);
+    }
+    bail!("No suitable chemical file format found for {:}", fmt);
 }
 // write chemifile:1 ends here
 

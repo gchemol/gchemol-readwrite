@@ -31,7 +31,7 @@ pub trait StringIO {
     fn format_as<S: AsRef<str>>(&self, fmt: S) -> Result<String>;
 
     /// Parse molecule from string in specific `fmt`.
-    fn parse_from<S: AsRef<str>, T: AsRef<str>>(s: S, fmt: T) -> Result<Molecule>;
+    fn parse_from<R: Read, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule>;
 }
 // traits:1 ends here
 
@@ -72,9 +72,29 @@ impl ToFile for Molecule {
 }
 // molecule:1 ends here
 
-// api
+// string
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*api][api:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*string][string:1]]
+impl StringIO for Molecule {
+    /// Format molecule as string in specific molecular file format. Return
+    /// error if cannot format molecule in `fmt`.
+    fn format_as<S: AsRef<str>>(&self, fmt: S) -> Result<String> {
+        let fmt = fmt.as_ref();
+        crate::formats::format_as_chemical_file(&self, fmt)
+    }
+
+    /// construct molecule from string in specific molecular file format.
+    fn parse_from<R: Read, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule> {
+        read_from(s, &fmt)?
+            .last()
+            .ok_or(format_err!("Parse molecule failure in format: {}", fmt.as_ref()))
+    }
+}
+// string:1 ends here
+
+// functions
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*functions][functions:1]]
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
 pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
@@ -95,9 +115,19 @@ pub fn read_all<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
     Ok(mols)
 }
 
-/// Read molecules in specific chemical file format.
-pub fn read_format<P: AsRef<Path>>(path: P, fmt: &str) -> Result<impl Iterator<Item = Molecule>> {
-    let mols = crate::formats::read_chemical_file(path, Some(fmt))?;
+/// Read molecules from readable source in specific chemical file format.
+pub fn read_from<R: Read, S: AsRef<str>>(mut source: R, fmt: S) -> Result<impl Iterator<Item = Molecule>> {
+    // FIXME: adhoc hacking
+    use tempfile::tempdir;
+
+    // read stream and write it into a temporary file
+    let mut buf = String::new();
+    let _ = source.read_to_string(&mut buf)?;
+    let dir = tempdir()?;
+    let path = dir.path().join("test");
+    guts::fs::write_to_file(&path, &buf)?;
+
+    let mols = crate::formats::read_chemical_file(path, Some(fmt.as_ref()))?;
     Ok(mols.filter_map(|parsed| match parsed {
         Ok(mol) => Some(mol),
         Err(e) => {
@@ -121,4 +151,4 @@ pub fn write_format<'a, P: AsRef<Path>>(
 ) -> Result<()> {
     crate::formats::write_chemical_file(path, mols, Some(fmt))
 }
-// api:1 ends here
+// functions:1 ends here
