@@ -32,6 +32,11 @@ pub trait StringIO {
 
     /// Parse molecule from string in specific `fmt`.
     fn parse_from<R: Read, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule>;
+
+    fn from_str<S: AsRef<str>>(s: &str, fmt: S) -> Result<Molecule> {
+        let f = std::io::Cursor::new(s.as_bytes());
+        Self::parse_from(f, fmt)
+    }
 }
 // traits:1 ends here
 
