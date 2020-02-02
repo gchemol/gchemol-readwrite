@@ -31,7 +31,7 @@ pub trait StringIO {
     fn format_as<S: AsRef<str>>(&self, fmt: S) -> Result<String>;
 
     /// Parse molecule from string in specific `fmt`.
-    fn parse_from<R: Read, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule>;
+    fn parse_from<R: Read + Seek, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule>;
 
     fn from_str<S: AsRef<str>>(s: &str, fmt: S) -> Result<Molecule> {
         let f = std::io::Cursor::new(s.as_bytes());
@@ -89,7 +89,7 @@ impl StringIO for Molecule {
     }
 
     /// construct molecule from string in specific molecular file format.
-    fn parse_from<R: Read, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule> {
+    fn parse_from<R: Read + Seek, S: AsRef<str>>(s: R, fmt: S) -> Result<Molecule> {
         read_from(s, &fmt)?
             .last()
             .ok_or(format_err!("Parse molecule failure in format: {}", fmt.as_ref()))
@@ -121,7 +121,7 @@ pub fn read_all<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
 }
 
 /// Read molecules from readable source in specific chemical file format.
-pub fn read_from<R: Read, S: AsRef<str>>(mut source: R, fmt: S) -> Result<impl Iterator<Item = Molecule>> {
+pub fn read_from<R: Read + Seek, S: AsRef<str>>(mut source: R, fmt: S) -> Result<impl Iterator<Item = Molecule>> {
     // FIXME: adhoc hacking
     use tempfile::tempdir;
 
@@ -145,7 +145,7 @@ pub fn read_from<R: Read, S: AsRef<str>>(mut source: R, fmt: S) -> Result<impl I
 /// Write molecules into path. File format will be determined according to the
 /// path
 pub fn write<'a, P: AsRef<Path>>(path: P, mols: impl IntoIterator<Item = &'a Molecule>) -> Result<()> {
-    crate::formats::write_chemical_file(path, mols, None)
+    crate::formats::write_chemical_file(path.as_ref(), mols, None)
 }
 
 /// Write molecules into path in specific chemical file format.
@@ -154,6 +154,6 @@ pub fn write_format<'a, P: AsRef<Path>>(
     mols: impl IntoIterator<Item = &'a Molecule>,
     fmt: &str,
 ) -> Result<()> {
-    crate::formats::write_chemical_file(path, mols, Some(fmt))
+    crate::formats::write_chemical_file(path.as_ref(), mols, Some(fmt))
 }
 // functions:1 ends here

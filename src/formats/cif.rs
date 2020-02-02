@@ -393,19 +393,18 @@ impl ParseMolecule for CifFile {
     }
 
     /// Skip reading some lines.
-    fn pre_read_hook(&self, mut r: TextReader<FileReader>) -> TextReader<FileReader> {
+    fn pre_read_hook<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> TextReader<R>
+    where
+        Self: Sized,
+    {
         r.seek_line(|line| line.starts_with("data_"));
         r
     }
 }
-// impl chemfile:1 ends here
 
-// impl partition
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
 impl Partition for CifFile {
     fn read_next(&self, context: ReadContext) -> bool {
         !context.next_line().starts_with("data_")
     }
 }
-// impl partition:1 ends here
+// impl chemfile:1 ends here

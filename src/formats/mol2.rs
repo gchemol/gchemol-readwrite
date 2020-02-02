@@ -464,7 +464,10 @@ impl ParseMolecule for Mol2File {
     }
 
     /// Skip reading some lines.
-    fn pre_read_hook(&self, mut r: TextReader<FileReader>) -> TextReader<FileReader> {
+    fn pre_read_hook<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> TextReader<R>
+    where
+        Self: Sized,
+    {
         r.seek_line(|line| line.starts_with("@<TRIPOS>MOLECULE"));
         r
     }
@@ -483,7 +486,8 @@ impl Partition for Mol2File {
 #[test]
 fn test_mol2() -> Result<()> {
     let f = "./tests/files/mol2/multi-obabel.mol2";
-    let mols = Mol2File().parse_molecules_from_path(f).unwrap();
+    let r = TextReader::from_path(f)?;
+    let mols = Mol2File().parse_molecules(r);
     for m in mols {
         dbg!(m?.natoms());
     }

@@ -261,7 +261,7 @@ fn format_molecule(mol: &Molecule) -> String {
     let vb = lattice.vector_b();
     let vc = lattice.vector_c();
 
-    for v in [va, vb, vc].into_iter() {
+    for v in [va, vb, vc].iter() {
         let line = format!("{:12.8}{:12.8}{:12.8}\n", v[0], v[1], v[2]);
         lines.push_str(&line);
     }

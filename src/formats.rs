@@ -77,7 +77,10 @@ pub(self) trait ParseMolecule {
     fn parse_molecule(&self, input: &str) -> Result<Molecule>;
 
     /// Hook before start reading.
-    fn pre_read_hook(&self, r: TextReader<FileReader>) -> TextReader<FileReader> {
+    fn pre_read_hook<R: BufRead + Seek>(&self, r: TextReader<R>) -> TextReader<R>
+    where
+        Self: Sized,
+    {
         r
     }
 }
@@ -89,28 +92,26 @@ pub(self) trait ParseMolecule {
 use text_parser::*;
 
 /// Parse many molecules
-pub(self) trait ParseMoleculeIter {
+pub(self) trait ParseMoleculeIter<R>
+where
+    R: BufRead + Seek,
+{
     type IterMolecule: Iterator<Item = Result<Molecule>>;
 
     /// Return an iterator over parsed molecules from reader `r`.
-    fn parse_molecules(&self, r: TextReader<FileReader>) -> Self::IterMolecule;
-
-    /// Return an iterator over parsed molecules from path `p`.
-    fn parse_molecules_from_path<P: AsRef<Path>>(&self, p: P) -> Result<Self::IterMolecule> {
-        let reader = TextReader::from_path(p)?;
-        Ok(self.parse_molecules(reader))
-    }
+    fn parse_molecules(&self, r: TextReader<R>) -> Self::IterMolecule;
 }
 
 // cannot use dynamic dispatching
-impl<T> ParseMoleculeIter for T
+impl<R, T> ParseMoleculeIter<R> for T
 where
     T: ChemicalFile + Copy,
+    R: BufRead + Seek,
 {
-    type IterMolecule = ParsedMolecules<Self>;
+    type IterMolecule = ParsedMolecules<R, Self>;
 
     /// Return an iterator over parsed molecules from reader `r`.
-    fn parse_molecules(&self, r: TextReader<FileReader>) -> Self::IterMolecule {
+    fn parse_molecules(&self, r: TextReader<R>) -> Self::IterMolecule {
         // apply reading hook
         let mut r = self.pre_read_hook(r);
         ParsedMolecules {
@@ -120,16 +121,18 @@ where
     }
 }
 
-pub(self) struct ParsedMolecules<T>
+pub(self) struct ParsedMolecules<R, T>
 where
+    R: BufRead + Seek,
     T: ChemicalFile,
 {
-    partitions: Partitions<FileReader, T>,
+    partitions: Partitions<R, T>,
     parser: T,
 }
 
-impl<T> Iterator for ParsedMolecules<T>
+impl<R, T> Iterator for ParsedMolecules<R, T>
 where
+    R: BufRead + Seek,
     T: ChemicalFile,
 {
     type Item = Result<Molecule>;
@@ -145,72 +148,52 @@ where
 }
 // parse iter:1 ends here
 
-// adhoc
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*adhoc][adhoc:1]]
-use std::io::prelude::*;
-
-trait XXx {
-    type IterMolecule: Iterator<Item = Result<Molecule>>;
-
-    /// Return an iterator over parsed molecules from reader `r`.
-    fn parse_molecules<R: BufRead + Seek>(&self, r: TextReader<R>) -> Self::IterMolecule;
-
-    /// Hook before start reading.
-    fn pre_read_hook<R: BufRead + Seek>(&self, r: TextReader<R>) -> TextReader<R> {
-        r
-    }
-}
-// adhoc:1 ends here
-
 // read chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
+macro_rules! parser {
+    ($found:expr, $path:expr, $fmto:expr, $ee:expr) => {
+        // early return when found the right parser
+        if !$found {
+            // check file type
+            if let Some(fmt) = $fmto {
+                if $ee().ftype() == fmt.to_lowercase() {
+                    $found = true;
+                }
+            }
+            // check file extension
+            if !$found && $ee().parsable($path) {
+                $found = true;
+            }
+            if $found {
+                let r = TextReader::from_path($path)?;
+                let mols = $ee().parse_molecules(r);
+                Some(mols)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+        .into_iter()
+        .flatten()
+    };
+}
+
 pub(super) fn read_chemical_file<P: AsRef<Path>>(
     path: P,
     fmt: Option<&str>,
 ) -> Result<impl Iterator<Item = Result<Molecule>>> {
     let path = path.as_ref();
     let mut found = false;
-
-    macro_rules! parser {
-        ($found:expr, $path:expr, $ee:expr) => {
-            // early return when found the right parser
-            if !$found {
-                // check file type
-                if let Some(fmt) = fmt {
-                    if $ee().ftype() == fmt.to_lowercase() {
-                        $found = true;
-                    }
-                }
-                // check file extension
-                if !$found && $ee().parsable($path) {
-                    $found = true;
-                }
-                if $found {
-                    let mols = $ee()
-                        .parse_molecules_from_path($path)
-                        .with_context(|| format_err!("Open chemical file {:?} failed", $ee().ftype()))?;
-                    Some(mols)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-            .into_iter()
-            .flatten()
-        };
-    }
-
-    let p1 = parser!(found, path, self::xyz::XyzFile);
-    let p2 = parser!(found, path, self::xyz::PlainXyzFile);
-    let p3 = parser!(found, path, self::mol2::Mol2File);
-    let p4 = parser!(found, path, self::cif::CifFile);
-    let p5 = parser!(found, path, self::gaussian_input::GaussianInputFile);
-    let p6 = parser!(found, path, self::vasp_input::PoscarFile);
-    let p7 = parser!(found, path, self::sdf::SdfFile);
-    let p8 = parser!(found, path, self::pdb::PdbFile);
+    let p1 = parser!(found, path, fmt, self::xyz::XyzFile);
+    let p2 = parser!(found, path, fmt, self::xyz::PlainXyzFile);
+    let p3 = parser!(found, path, fmt, self::mol2::Mol2File);
+    let p4 = parser!(found, path, fmt, self::cif::CifFile);
+    let p5 = parser!(found, path, fmt, self::gaussian_input::GaussianInputFile);
+    let p6 = parser!(found, path, fmt, self::vasp_input::PoscarFile);
+    let p7 = parser!(found, path, fmt, self::sdf::SdfFile);
+    let p8 = parser!(found, path, fmt, self::pdb::PdbFile);
     if !found {
         bail!("No available parser found for {:?}, {:?}", path, fmt);
     }
@@ -223,15 +206,13 @@ pub(super) fn read_chemical_file<P: AsRef<Path>>(
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*write chemifile][write chemifile:1]]
 /// Write molecules into path in specific chemical file format.
-pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
-    path: P,
+pub(super) fn write_chemical_file<'a>(
+    path: &Path,
     mols: impl IntoIterator<Item = &'a Molecule>,
     fmt: Option<&str>,
 ) -> Result<()> {
-    let path = path.as_ref();
     if let Some(cf) = guess_chemical_file_format(path, fmt) {
         let mut fp = File::create(path).with_context(|| format!("Failed to create file: {:?}", path))?;
-
         for mol in mols {
             let s = cf.format_molecule(mol)?;
             fp.write(s.as_bytes());
@@ -246,8 +227,7 @@ pub(super) fn write_chemical_file<'a, P: AsRef<Path>>(
 /// Return formatted representation of molecule in specific chemical file
 /// format.
 pub(super) fn format_as_chemical_file(mol: &Molecule, fmt: &str) -> Result<String> {
-    // FIXME: ugly
-    if let Some(cf) = guess_chemical_file_format(Path::new(""), Some(fmt)) {
+    if let Some(cf) = guess_chemical_file_format_from_ftype(fmt) {
         return cf.format_molecule(mol);
     }
     bail!("No suitable chemical file format found for {:}", fmt);
@@ -271,28 +251,34 @@ macro_rules! avail_parsers {
         ]
     };
 }
-
-/// guess the most appropriate file format by its file extensions
-fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<dyn ChemicalFile>> {
+/// guess the most appropriate file format by file type
+fn guess_chemical_file_format_from_ftype(fmt: &str) -> Option<Box<dyn ChemicalFile>> {
     let backends: Vec<Box<dyn ChemicalFile>> = avail_parsers!();
-    // 1. by file type
-    if let Some(fmt) = fmt {
-        for x in backends {
-            if x.ftype() == fmt.to_lowercase() {
-                return Some(x);
-            }
-        }
-    // 2. or by file extension
-    } else {
-        for x in backends {
-            if x.parsable(filename) {
-                return Some(x);
-            }
+    for x in backends {
+        if x.ftype() == fmt.to_lowercase() {
+            return Some(x);
         }
     }
-
-    // 3. return None if no suitable backend
+    // no suitable backend
     None
+}
+
+/// guess the most appropriate file format by file path extensions
+fn guess_chemical_file_format_from_path(filename: &Path) -> Option<Box<dyn ChemicalFile>> {
+    let backends: Vec<Box<dyn ChemicalFile>> = avail_parsers!();
+    for x in backends {
+        if x.parsable(filename) {
+            return Some(x);
+        }
+    }
+    // no suitable backend
+    None
+}
+
+/// guess the most appropriate file format by file path extensions
+fn guess_chemical_file_format(filename: &Path, fmt: Option<&str>) -> Option<Box<dyn ChemicalFile>> {
+    fmt.and_then(|fmt| guess_chemical_file_format_from_ftype(fmt))
+        .or_else(|| guess_chemical_file_format_from_path(filename))
 }
 
 /// description of all backends
@@ -302,5 +288,20 @@ pub fn describe_backends() {
     for cf in backends {
         cf.describe();
     }
+}
+
+#[test]
+fn test_backends() {
+    let f = "/tmp/test.xyz";
+    let cf = guess_chemical_file_format(f.as_ref(), None).expect("guess xyz");
+    assert_eq!(cf.ftype(), "text/xyz");
+
+    let f = "/tmp/test";
+    let cf = guess_chemical_file_format(f.as_ref(), Some("text/xyz")).expect("guess xyz ftype");
+    assert_eq!(cf.ftype(), "text/xyz");
+
+    let f = "/tmp/test.poscar";
+    let cf = guess_chemical_file_format(f.as_ref(), None).expect("guess xyz ftype");
+    assert_eq!(cf.ftype(), "vasp/poscar");
 }
 // backends:1 ends here
