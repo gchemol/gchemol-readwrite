@@ -199,10 +199,10 @@ pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
                     pos.into()
                 };
                 let mut a = Atom::new(sym, pos);
-                // FIXME: just a temporary workaround
-                // if sflags.is_some() {
-                //     a.properties.store(POSCAR_SFLAGS_KEY, sflags.unwrap());
-                // };
+                // FIXME: adhoc hacking
+                if sflags.is_some() {
+                    a.properties.store(POSCAR_SFLAGS_KEY, sflags.unwrap());
+                }
                 mol.add_atom(i+1, a);
             }
             mol.set_lattice(lat);
@@ -248,7 +248,7 @@ Direct
 // format molecule
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format molecule][format molecule:1]]
-// const POSCAR_SFLAGS_KEY: &str = "vasp/poscar/sflags";
+const POSCAR_SFLAGS_KEY: &str = "vasp/poscar/sflags";
 
 fn format_molecule(mol: &Molecule) -> String {
     let mut lines = String::new();
@@ -281,23 +281,23 @@ fn format_molecule(mol: &Molecule) -> String {
     for (_, a) in mol.atoms() {
         let p = lattice.to_frac(a.position());
         // FIXME: just a temporary workaround
-        // let line = if a.properties.contains_key(POSCAR_SFLAGS_KEY) {
-        //     let sflags: [bool; 3] = a
-        //         .properties
-        //         .load(POSCAR_SFLAGS_KEY)
-        //         .expect("vasp selective_dynamics flags");
-        //     format!(
-        //         "{x:18.12} {y:18.12} {z:18.12} {fx} {fy} {fz}\n",
-        //         x = x,
-        //         y = y,
-        //         z = z,
-        //         fx = if sflags[0] { "T" } else { "F" },
-        //         fy = if sflags[1] { "T" } else { "F" },
-        //         fz = if sflags[2] { "T" } else { "F" },
-        //     )
-        // } else {
-        //     format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = x, y = y, z = z)
-        // };
+        let line = if a.properties.contains_key(POSCAR_SFLAGS_KEY) {
+            let sflags: [bool; 3] = a
+                .properties
+                .load(POSCAR_SFLAGS_KEY)
+                .expect("vasp selective_dynamics flags");
+            format!(
+                "{x:18.12} {y:18.12} {z:18.12} {fx} {fy} {fz}\n",
+                x = p.x,
+                y = p.y,
+                z = p.z,
+                fx = if sflags[0] { "T" } else { "F" },
+                fy = if sflags[1] { "T" } else { "F" },
+                fz = if sflags[2] { "T" } else { "F" },
+            )
+        } else {
+            format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = p.x, y = p.y, z = p.z)
+        };
         let line = format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = p.x, y = p.y, z = p.z);
         lines.push_str(&line);
     }
@@ -370,8 +370,7 @@ impl ChemicalFile for PoscarFile {
     }
 
     fn format_molecule(&self, mol: &Molecule) -> Result<String> {
-        // Ok(format_molecule(mol))
-        todo!()
+        Ok(format_molecule(mol))
     }
 }
 
