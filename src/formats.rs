@@ -151,54 +151,83 @@ where
 // read chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
-macro_rules! parser {
-    ($found:expr, $path:expr, $fmto:expr, $ee:expr) => {
-        // early return when found the right parser
-        if !$found {
-            // check file type
-            if let Some(fmt) = $fmto {
-                if $ee().ftype() == fmt.to_lowercase() {
-                    $found = true;
-                }
-            }
-            // check file extension
-            if !$found && $ee().parsable($path) {
-                $found = true;
-            }
-            if $found {
-                let r = TextReader::from_path($path)?;
-                let mols = $ee().parse_molecules(r);
-                Some(mols)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-        .into_iter()
-        .flatten()
-    };
-}
+use self::cif::CifFile;
+use self::gaussian_input::GaussianInputFile;
+use self::mol2::Mol2File;
+use self::pdb::PdbFile;
+use self::sdf::SdfFile;
+use self::vasp_input::PoscarFile;
+use self::xyz::PlainXyzFile;
+use self::xyz::XyzFile;
 
-pub(super) fn read_chemical_file<P: AsRef<Path>>(
-    path: P,
-    fmt: Option<&str>,
-) -> Result<impl Iterator<Item = Result<Molecule>>> {
-    let path = path.as_ref();
-    let mut found = false;
-    let p1 = parser!(found, path, fmt, self::xyz::XyzFile);
-    let p2 = parser!(found, path, fmt, self::xyz::PlainXyzFile);
-    let p3 = parser!(found, path, fmt, self::mol2::Mol2File);
-    let p4 = parser!(found, path, fmt, self::cif::CifFile);
-    let p5 = parser!(found, path, fmt, self::gaussian_input::GaussianInputFile);
-    let p6 = parser!(found, path, fmt, self::vasp_input::PoscarFile);
-    let p7 = parser!(found, path, fmt, self::sdf::SdfFile);
-    let p8 = parser!(found, path, fmt, self::pdb::PdbFile);
-    if !found {
-        bail!("No available parser found for {:?}, {:?}", path, fmt);
+pub(super) struct ChemicalFileParser(pub String);
+
+impl ChemicalFileParser {
+    pub fn new(fmt: &str) -> Self {
+        Self(fmt.to_owned())
     }
 
-    Ok(p1.chain(p2).chain(p3).chain(p4).chain(p5).chain(p6).chain(p7).chain(p8))
+    pub fn guess_from_path(path: &Path) -> Option<Self> {
+        guess_chemical_file_format_from_path(path).map(move |cf| Self::new(cf.ftype()))
+    }
+
+    pub fn guess(path: &Path, fmt: Option<&str>) -> Option<Self> {
+        guess_chemical_file_format(path, fmt).map(|cf| Self::new(cf.ftype()))
+    }
+
+    pub fn parse_molecules_from<R>(&self, r: TextReader<R>) -> Result<impl Iterator<Item = Molecule>>
+    where
+        R: BufRead + Seek,
+    {
+        let mut p1 = None;
+        let mut p2 = None;
+        let mut p3 = None;
+        let mut p4 = None;
+        let mut p5 = None;
+        let mut p6 = None;
+        let mut p7 = None;
+        let mut p8 = None;
+
+        macro_rules! cf_parse {
+            ($cf:expr, $pn:expr) => {
+                $pn = Some($cf().parse_molecules(r));
+            };
+        }
+
+        match self.0.as_str() {
+            "text/xyz" => cf_parse!(XyzFile, p1),
+            "text/pxyz" => cf_parse!(PlainXyzFile, p2),
+            "text/mol2" => cf_parse!(Mol2File, p3),
+            "text/cif" => cf_parse!(CifFile, p4),
+            "text/sdf" => cf_parse!(SdfFile, p5),
+            "text/pdb" => cf_parse!(PdbFile, p6),
+            "vasp/input" => cf_parse!(PoscarFile, p7),
+            "gaussian/input" => cf_parse!(GaussianInputFile, p8),
+            _ => bail!("No available parser found"),
+        }
+        Ok(p1
+            .into_iter()
+            .flatten()
+            .chain(p2.into_iter().flatten())
+            .chain(p3.into_iter().flatten())
+            .chain(p4.into_iter().flatten())
+            .chain(p5.into_iter().flatten())
+            .chain(p6.into_iter().flatten())
+            .chain(p7.into_iter().flatten())
+            .chain(p8.into_iter().flatten())
+            .filter_map(|parsed| match parsed {
+                Ok(mol) => Some(mol),
+                Err(e) => {
+                    eprintln!("found parsing error: {:?}", e);
+                    None
+                }
+            }))
+    }
+
+    pub fn parse_molecules(&self, path: &Path) -> Result<impl Iterator<Item = Molecule>> {
+        let r = TextReader::from_path(path).context("Parse molecules from path failed")?;
+        self.parse_molecules_from(r)
+    }
 }
 // read chemfile:1 ends here
 

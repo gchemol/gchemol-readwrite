@@ -103,14 +103,10 @@ impl StringIO for Molecule {
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
 pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
-    let mols = crate::formats::read_chemical_file(path, None)?;
-    Ok(mols.filter_map(|parsed| match parsed {
-        Ok(mol) => Some(mol),
-        Err(e) => {
-            eprintln!("found parsing error: {:?}", e);
-            None
-        }
-    }))
+    let path = path.as_ref();
+    crate::formats::ChemicalFileParser::guess_from_path(path)
+        .ok_or(format_err!("No parser for path: {:?}", path))?
+        .parse_molecules(path.as_ref())
 }
 
 // https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result
@@ -121,25 +117,10 @@ pub fn read_all<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
 }
 
 /// Read molecules from readable source in specific chemical file format.
-pub fn read_from<R: Read + Seek, S: AsRef<str>>(mut source: R, fmt: S) -> Result<impl Iterator<Item = Molecule>> {
-    // FIXME: adhoc hacking
-    use tempfile::tempdir;
-
-    // read stream and write it into a temporary file
-    let mut buf = String::new();
-    let _ = source.read_to_string(&mut buf)?;
-    let dir = tempdir()?;
-    let path = dir.path().join("test");
-    guts::fs::write_to_file(&path, &buf)?;
-
-    let mols = crate::formats::read_chemical_file(path, Some(fmt.as_ref()))?;
-    Ok(mols.filter_map(|parsed| match parsed {
-        Ok(mol) => Some(mol),
-        Err(e) => {
-            eprintln!("found parsing error: {:?}", e);
-            None
-        }
-    }))
+pub fn read_from<R: Read + Seek, S: AsRef<str>>(source: R, fmt: S) -> Result<impl Iterator<Item = Molecule>> {
+    let cf = crate::formats::ChemicalFileParser::new(fmt.as_ref());
+    let r = text_parser::TextReader::new(source);
+    cf.parse_molecules_from(r)
 }
 
 /// Write molecules into path. File format will be determined according to the

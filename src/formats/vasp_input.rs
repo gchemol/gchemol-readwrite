@@ -362,7 +362,7 @@ pub struct PoscarFile();
 
 impl ChemicalFile for PoscarFile {
     fn ftype(&self) -> &str {
-        "vasp/poscar"
+        "vasp/input"
     }
 
     fn possible_extensions(&self) -> Vec<&str> {

@@ -221,7 +221,7 @@ pub struct SdfFile();
 
 impl ChemicalFile for SdfFile {
     fn ftype(&self) -> &str {
-        "text/mol"
+        "text/sdf"
     }
 
     fn possible_extensions(&self) -> Vec<&str> {
