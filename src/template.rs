@@ -174,7 +174,7 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
             x + 1
         };
 
-        let v = a.momentum();
+        let [vx, vy, vz] = a.momentum();
         atoms.push(AtomData {
             index,
             element_index,
@@ -186,9 +186,9 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
             fx,
             fy,
             fz,
-            vx: v.x,
-            vy: v.y,
-            vz: v.z,
+            vx,
+            vy,
+            vz,
         })
     }
 
