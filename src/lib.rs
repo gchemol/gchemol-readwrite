@@ -10,7 +10,7 @@
 //        AUTHOR:  Wenping Guo <ybyygu@gmail.com>
 //       LICENCE:  GPL version 3
 //       CREATED:  <2018-04-11 Wed 15:42>
-//       UPDATED:  <2020-01-31 Fri 16:28>
+//       UPDATED:  <2020-02-06 Thu 17:22>
 //===============================================================================#
 // header:1 ends here
 
@@ -35,5 +35,6 @@ pub mod prelude {
     pub use crate::template::TemplateRendering;
 }
 
+pub use crate::formats::describe_backends;
 pub use crate::io::{read, read_all, read_from, write, write_format};
 // exports:1 ends here
