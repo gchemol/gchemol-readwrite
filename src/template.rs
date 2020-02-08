@@ -5,7 +5,7 @@ use indexmap::{indexmap, IndexMap};
 use serde_json::json;
 
 use gchemol_core::{Atom, Molecule};
-use guts::prelude::*;
+use gchemol_gut::prelude::*;
 // imports:1 ends here
 
 // mods
@@ -27,7 +27,7 @@ pub trait TemplateRendering {
 impl TemplateRendering for Molecule {
     fn render_with<P: AsRef<std::path::Path>>(&self, f: P) -> Result<String> {
         let path = f.as_ref();
-        let template = guts::fs::read_file(path)?;
+        let template = gchemol_gut::fs::read_file(path)?;
 
         // possible extension in lowercase only
         match path.extension().and_then(|x| x.to_str()) {
@@ -126,7 +126,7 @@ struct MoleculeData {
 /// construct a shallow representation of molecule for templating
 pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
     // unit cell data
-    let unit_cell = if let Some(mut lat) = mol.lattice {
+    let unit_cell = if let Some(lat) = mol.lattice {
         let [va, vb, vc] = lat.vectors();
         let [a, b, c] = lat.lengths();
         let [alpha, beta, gamma] = lat.angles();
@@ -148,8 +148,6 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
         None
     };
 
-    let mut bonds = vec![];
-
     let mut element_types: IndexMap<String, usize> = indexmap! {};
     for (_, a) in mol.atoms() {
         let k = a.symbol().into();
@@ -166,7 +164,7 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
         let symbol = a.symbol().to_string();
         let [fx, fy, fz] = mol
             .lattice
-            .map(|mut lat| lat.to_frac([x, y, z]).into())
+            .map(|lat| lat.to_frac([x, y, z]).into())
             .unwrap_or([0.0; 3]);
 
         let element_index = {
@@ -208,6 +206,7 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
         })
         .collect();
 
+    let bonds = vec![];
     let md = MoleculeData {
         title: mol.title(),
         number_of_atoms: mol.natoms(),

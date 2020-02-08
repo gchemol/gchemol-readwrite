@@ -14,7 +14,7 @@ mod vasp_input;
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use guts::fs::*;
+use gchemol_gut::fs::*;
 
 type FileReader = BufReader<File>;
 // imports:1 ends here
@@ -23,11 +23,11 @@ type FileReader = BufReader<File>;
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
 pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule, Vector3f};
-pub(self) use guts::prelude::*;
+pub(self) use gchemol_gut::prelude::*;
 
 pub(self) mod parser {
-    pub use text_parser::parsers::*;
-    pub use text_parser::{Bunches, Partition, Partitions, ReadContext, TextReader};
+    pub use gchemol_parser::parsers::*;
+    pub use gchemol_parser::{Bunches, Partition, Partitions, ReadContext, TextReader};
 }
 // exports:1 ends here
 
@@ -89,7 +89,7 @@ pub(self) trait ParseMolecule {
 // parse iter
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse iter][parse iter:1]]
-use text_parser::*;
+use gchemol_parser::*;
 
 /// Parse many molecules
 pub(self) trait ParseMoleculeIter<R>
@@ -331,6 +331,6 @@ fn test_backends() {
 
     let f = "/tmp/test.poscar";
     let cf = guess_chemical_file_format(f.as_ref(), None).expect("guess xyz ftype");
-    assert_eq!(cf.ftype(), "vasp/poscar");
+    assert_eq!(cf.ftype(), "vasp/input");
 }
 // backends:1 ends here

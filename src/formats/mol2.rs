@@ -117,16 +117,17 @@ fn get_atom_type(atom: &Atom) -> &str {
 
 fn format_atom(a: &Atom) -> String {
     let position = a.position();
-    format!("{name:8} {x:-12.5} {y:-12.5} {z:-12.5} {symbol:8} {subst_id:5} {subst_name:8} {charge:-6.4}\n",
-            name  = a.label(),
-            x = position[0],
-            y = position[1],
-            z = position[2],
-            // FIXME:
-            symbol = get_atom_type(a),
-            subst_id = 1,
-            subst_name = "SUBUNIT",
-            charge = 0.0,
+    format!(
+        "{name:8} {x:-12.5} {y:-12.5} {z:-12.5} {symbol:8} {subst_id:5} {subst_name:8} {charge:-6.4}\n",
+        name = a.label(),
+        x = position[0],
+        y = position[1],
+        z = position[2],
+        // FIXME:
+        symbol = get_atom_type(a),
+        subst_id = 1,
+        subst_name = "SUBUNIT",
+        charge = 0.0,
     )
 }
 // atom:1 ends here
@@ -413,7 +414,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
     }
 
     // format crystal
-    if let Some(mut lat) = &mol.lattice {
+    if let Some(lat) = &mol.lattice {
         lines += "@<TRIPOS>CRYSIN\n";
         let [a, b, c] = lat.lengths();
         let [alpha, beta, gamma] = lat.angles();

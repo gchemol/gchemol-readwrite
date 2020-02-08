@@ -2,8 +2,7 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
 use super::*;
-use gchemol_core::{Atom, Molecule};
-use guts::prelude::*;
+use gchemol_core::Molecule;
 
 use ::tera::Value;
 // imports:1 ends here

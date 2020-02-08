@@ -5,12 +5,11 @@ use handlebars::*;
 
 use super::*;
 use gchemol_core::Molecule;
-use guts::prelude::*;
 // imports:1 ends here
 
-// format float number
+// format helper
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format float number][format float number:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format helper][format helper:1]]
 // https://docs.rs/handlebars/1.0.0/handlebars/trait.HelperDef.html
 // define a helper for formatting string or number
 fn format(
@@ -46,7 +45,7 @@ fn format(
         };
         out.write(rendered.as_ref())?;
 
-    // format number
+        // format number
     } else if param.value().is_number() || param.value().is_f64() {
         let num: f64 = param
             .value()
@@ -72,7 +71,7 @@ fn format(
 
     Ok(())
 }
-// format float number:1 ends here
+// format helper:1 ends here
 
 // fgt
 
@@ -104,7 +103,7 @@ fn test_template_render() {
 
     let mol = Molecule::from_file("tests/files/mol2/LTL-crysin-ds.mol2").expect("template mol");
 
-    let template = guts::fs::read_file("tests/files/templates/xyz.hbs").expect("template xyz.hbs");
+    let template = gchemol_gut::fs::read_file("tests/files/templates/xyz.hbs").expect("template xyz.hbs");
     let x = render_molecule_with(&mol, &template).unwrap();
 }
 // test:1 ends here

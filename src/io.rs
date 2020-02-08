@@ -1,8 +1,8 @@
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use guts::fs::*;
-use guts::prelude::*;
+use gchemol_gut::fs::*;
+use gchemol_gut::prelude::*;
 
 use gchemol_core::Molecule;
 // imports:1 ends here
@@ -45,13 +45,13 @@ pub trait StringIO {
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*file][file:1]]
 impl FromFile for String {
     fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        guts::fs::read_file(path)
+        gchemol_gut::fs::read_file(path)
     }
 }
 
 impl ToFile for str {
     fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        guts::fs::write_to_file(path, &self)
+        gchemol_gut::fs::write_to_file(path, &self)
     }
 }
 // file:1 ends here
@@ -119,7 +119,7 @@ pub fn read_all<P: AsRef<Path>>(path: P) -> Result<Vec<Molecule>> {
 /// Read molecules from readable source in specific chemical file format.
 pub fn read_from<R: Read + Seek, S: AsRef<str>>(source: R, fmt: S) -> Result<impl Iterator<Item = Molecule>> {
     let cf = crate::formats::ChemicalFileParser::new(fmt.as_ref());
-    let r = text_parser::TextReader::new(source);
+    let r = gchemol_parser::TextReader::new(source);
     cf.parse_molecules_from(r)
 }
 
