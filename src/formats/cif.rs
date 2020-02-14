@@ -202,10 +202,10 @@ fn parse_atoms(s: &str) -> Result<Vec<Atom>> {
         // parse fractional coordinates
         let sfx = row[ifx];
         let sfy = row[ify];
-        let sfy = row[ify];
+        let sfz = row[ifz];
         let (_, fx) = double_cif(sfx).expect("invalid fcoords x");
-        let (_, fy) = double_cif(sfx).expect("invalid fcoords y");
-        let (_, fz) = double_cif(sfx).expect("invalid fcoords z");
+        let (_, fy) = double_cif(sfy).expect("invalid fcoords y");
+        let (_, fz) = double_cif(sfz).expect("invalid fcoords z");
         // parse atom symbol
         let lbl = row[ilbl];
         // TODO: assign atom label
@@ -242,6 +242,7 @@ fn test_read_cif_atoms() -> Result<()> {
   ";
     let v = parse_atoms(txt)?;
     assert_eq!(12, v.len());
+    assert_eq!(v[0].position(), [0.30070, 0.07240, 0.04120]);
 
     Ok(())
 }
@@ -389,7 +390,13 @@ impl ChemicalFile for CifFile {
 
 impl ParseMolecule for CifFile {
     fn parse_molecule(&self, input: &str) -> Result<Molecule> {
-        parse_molecule(input)
+        let mut mol = parse_molecule(input)?;
+
+        // fract coords => cartesian coords
+        let frac_coords: Vec<_> = mol.positions().collect();
+        mol.set_scaled_positions(frac_coords);
+
+        Ok(mol)
     }
 
     /// Skip reading some lines.
