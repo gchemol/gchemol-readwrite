@@ -3,7 +3,7 @@
 # [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*cargo][cargo:1]]
 [package]
 name = "gchemol-readwrite"
-version = "0.0.37"
+version = "0.1.0"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Reading/writing chemical objects for gchemol"
@@ -13,16 +13,15 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 tempfile = "3"
-nom = "5"
+nom = "5.1"
 serde = {version="1", features = ["derive"]}
-serde_json = "1.0"
-regex = "1"
-indexmap = "1.0"
-handlebars = "3"
-tera = "1"
-gchemol-gut = { version="0.0.8" }
-gchemol-core = { version="0.0.38" }
-gchemol-parser = { version="0.0.8", features = ["adhoc"] }
+serde_json = "1"
+indexmap = "1"
+handlebars = "3.0"
+tera = "1.0"
+gchemol-gut = { version="0.1" }
+gchemol-core = { version=">=0.0.37" }
+gchemol-parser = { version="0.0.8" }
 
 [dev-dependencies]
 
