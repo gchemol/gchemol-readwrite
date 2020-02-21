@@ -65,7 +65,7 @@ fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3)>)> {
         atoms: read_atoms_pxyz >> // symbols and positions
         ({
             if n != atoms.len() {
-                warn!("Malformed xyz format: expect {} atoms, but found {}", n, atoms.len());
+                warn!("Informal xyz format: expect {} atoms, but found {}", n, atoms.len());
             }
             (title.trim(), atoms)
         })
@@ -139,7 +139,7 @@ fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
     if lat_vectors.len() == 3 {
         let lat = Lattice::new([lat_vectors[0], lat_vectors[1], lat_vectors[2]]);
         mol.set_lattice(lat);
-    } else {
+    } else if !lat_vectors.is_empty() {
         error!("Expect 3, but found {} TV atoms.", lat_vectors.len());
     }
     mol
