@@ -21,12 +21,11 @@ mod tera;
 /// Render molecule in user defined format
 pub trait TemplateRendering {
     /// Render with input template file.
-    fn render_with<P: AsRef<std::path::Path>>(&self, f: P) -> Result<String>;
+    fn render_with(&self, f: &std::path::Path) -> Result<String>;
 }
 
 impl TemplateRendering for Molecule {
-    fn render_with<P: AsRef<std::path::Path>>(&self, f: P) -> Result<String> {
-        let path = f.as_ref();
+    fn render_with(&self, path: &std::path::Path) -> Result<String> {
         let template = gchemol_gut::fs::read_file(path)?;
 
         // possible extension in lowercase only

@@ -49,7 +49,7 @@ fn test_readwrite() -> Result<()> {
 
     // format molecule using user defined template
     let tpl = "./tests/files/templates/xyz.tera";
-    let s = mol.render_with(tpl)?;
+    let s = mol.render_with(tpl.as_ref())?;
     assert!(!s.is_empty());
 
     Ok(())
