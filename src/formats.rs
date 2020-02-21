@@ -14,7 +14,7 @@ mod vasp_input;
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use gchemol_gut::fs::*;
+use gut::fs::*;
 
 type FileReader = BufReader<File>;
 // imports:1 ends here
@@ -23,7 +23,7 @@ type FileReader = BufReader<File>;
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
 pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule, Vector3f};
-pub(self) use gchemol_gut::prelude::*;
+pub(self) use gut::prelude::*;
 
 pub(self) mod parser {
     pub use gchemol_parser::parsers::*;

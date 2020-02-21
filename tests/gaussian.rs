@@ -5,7 +5,7 @@ use gchemol_core::Molecule;
 use gchemol_readwrite::prelude::*;
 use gchemol_readwrite::read_all;
 
-use gchemol_gut::prelude::*;
+use gut::prelude::*;
 // imports:1 ends here
 
 // test

@@ -5,7 +5,7 @@ use indexmap::{indexmap, IndexMap};
 use serde_json::json;
 
 use gchemol_core::{Atom, Molecule};
-use gchemol_gut::prelude::*;
+use gut::prelude::*;
 // imports:1 ends here
 
 // mods
@@ -26,7 +26,7 @@ pub trait TemplateRendering {
 
 impl TemplateRendering for Molecule {
     fn render_with(&self, path: &std::path::Path) -> Result<String> {
-        let template = gchemol_gut::fs::read_file(path)?;
+        let template = gut::fs::read_file(path)?;
 
         // possible extension in lowercase only
         match path.extension().and_then(|x| x.to_str()) {

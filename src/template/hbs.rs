@@ -103,7 +103,7 @@ fn test_template_render() {
 
     let mol = Molecule::from_file("tests/files/mol2/LTL-crysin-ds.mol2").expect("template mol");
 
-    let template = gchemol_gut::fs::read_file("tests/files/templates/xyz.hbs").expect("template xyz.hbs");
+    let template = gut::fs::read_file("tests/files/templates/xyz.hbs").expect("template xyz.hbs");
     let x = render_molecule_with(&mol, &template).unwrap();
 }
 // test:1 ends here

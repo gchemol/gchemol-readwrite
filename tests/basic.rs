@@ -5,7 +5,7 @@ use gchemol_core::Molecule;
 use gchemol_readwrite::prelude::*;
 use gchemol_readwrite::read_all;
 
-use gchemol_gut::prelude::*;
+use gut::prelude::*;
 // imports:1 ends here
 
 // test
@@ -33,11 +33,11 @@ fn test_readwrite() -> Result<()> {
     gchemol_readwrite::write(&path, &mols)?;
     // force to write in xyz format
     gchemol_readwrite::write_format(&path, &mols, "text/xyz")?;
-    let s = gchemol_gut::fs::read_file(&path)?;
+    let s = gut::fs::read_file(&path)?;
     assert_eq!(s.lines().count(), 99 + 3 + 2, "Failed to write in xyz format");
 
     // parse in specific format
-    let s = gchemol_gut::fs::read_file(&path)?;
+    let s = gut::fs::read_file(&path)?;
     let b = std::io::Cursor::new(s.as_bytes());
     let mols = gchemol_readwrite::read_from(b, "text/xyz")?;
     assert_eq!(mols.count(), 1, "Failed to read in xyz format");

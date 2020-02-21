@@ -1,8 +1,8 @@
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use gchemol_gut::fs::*;
-use gchemol_gut::prelude::*;
+use gut::fs::*;
+use gut::prelude::*;
 
 use gchemol_core::Molecule;
 // imports:1 ends here
@@ -45,13 +45,13 @@ pub trait StringIO {
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*file][file:1]]
 impl FromFile for String {
     fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        gchemol_gut::fs::read_file(path)
+        gut::fs::read_file(path)
     }
 }
 
 impl ToFile for str {
     fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        gchemol_gut::fs::write_to_file(path, &self)
+        gut::fs::write_to_file(path, &self)
     }
 }
 // file:1 ends here
