@@ -27,14 +27,15 @@ pub(self) use gut::prelude::*;
 
 pub(self) mod parser {
     pub use gchemol_parser::parsers::*;
-    pub use gchemol_parser::{Bunches, Partition, Partitions, ReadContext, TextReader};
+    pub use gchemol_parser::partition::{Partitions, Preceded, ReadAction, ReadContext, ReadPart, Terminated};
+    pub use gchemol_parser::TextReader;
 }
 // exports:1 ends here
 
 // chemical file
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemical file][chemical file:1]]
-pub(self) trait ChemicalFile: ParseMolecule + Partition {
+pub(self) trait ChemicalFile: ParseMolecule + ReadPart {
     /// Chemical file type.
     fn ftype(&self) -> &str;
 
@@ -89,7 +90,7 @@ pub(self) trait ParseMolecule {
 // parse iter
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse iter][parse iter:1]]
-use gchemol_parser::*;
+use gchemol_parser::{partition::Partitions, partition::ReadPart, TextReader};
 
 /// Parse many molecules
 pub(self) trait ParseMoleculeIter<R>
@@ -115,7 +116,7 @@ where
         // apply reading hook
         let mut r = self.pre_read_hook(r);
         ParsedMolecules {
-            partitions: r.partition_by(*self),
+            partitions: r.partitions(*self),
             parser: *self,
         }
     }

@@ -13,6 +13,9 @@ use gut::prelude::*;
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*tests][tests:1]]
 #[test]
 fn test_formats_xyz() -> Result<()> {
+    // FIXME: remove
+    gut::cli::setup_logger();
+
     // read all molecules into a Vec
     let f = "tests/files/xyz/c2h4.xyz";
     let mols = read_all(f)?;
@@ -41,6 +44,12 @@ fn test_formats_xyz() -> Result<()> {
     let s = mol.format_as("text/xyz")?;
     let mol2 = Molecule::from_str(&s, "text/xyz")?;
     assert_eq!(mol.natoms(), mol2.natoms());
+
+    // trajectory
+    let f = "./tests/files/xyz/rx-lst5.xyz";
+    let mols = gchemol_readwrite::read_all(f)?;
+    assert_eq!(mols.len(), 5);
+    assert_eq!(mols[0].natoms(), 13);
 
     Ok(())
 }

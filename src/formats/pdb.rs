@@ -147,7 +147,7 @@ fn test_guess_element() {
 // 77 - 78        LString(2)    element      Element symbol, right-justified.
 // 79 - 80        LString(2)    charge       Charge  on the atom.
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atom records][atom records:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atom%20records][atom records:1]]
 // Return Atom index (sn) and Atom object
 fn read_atom_record(s: &str) -> IResult<&str, (usize, Atom)> {
     let tag_atom = alt((tag("ATOM  "), tag("HETATM")));
@@ -268,7 +268,7 @@ HETATM 1641  C8  MID E   5      -2.096   3.018  29.071  1.00 30.82           C\n
 // Expected to fail if atom index is larger than 9999 since neighboring numbers
 // will overlap
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bond records][bond records:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bond%20records][bond records:1]]
 fn read_bond_record(s: &str) -> IResult<&str, Vec<(usize, usize)>> {
     let tag_conect = tag("CONECT");
     let atom_sn = map_res(take_s(5), |x| x.trim().parse::<usize>());
@@ -521,11 +521,15 @@ impl ParseMolecule for PdbFile {
         Ok(mol)
     }
 }
+// chemfile:1 ends here
 
-impl Partition for PdbFile {
+// new
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+impl ReadPart for PdbFile {
     // for multi-model records
-    fn read_next(&self, context: ReadContext) -> bool {
-        context.this_line() != "ENDMDL\n"
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        Terminated(|line: &str| line == "ENDMDL\n").read_next(context)
     }
 }
-// chemfile:1 ends here
+// new:1 ends here

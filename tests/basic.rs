@@ -42,6 +42,7 @@ fn test_readwrite() -> Result<()> {
     let mols = gchemol_readwrite::read_from(b, "text/xyz")?;
     assert_eq!(mols.count(), 1, "Failed to read in xyz format");
     let mol = Molecule::from_str(&s, "text/xyz")?;
+    assert!(mol.is_periodic());
 
     // write in specific format
     let s = mol.format_as("text/xyz")?;

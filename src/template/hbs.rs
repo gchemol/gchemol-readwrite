@@ -98,6 +98,7 @@ pub(super) fn render_molecule_with(mol: &Molecule, template: &str) -> Result<Str
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
 #[test]
+#[ignore]
 fn test_template_render() {
     use crate::prelude::*;
 

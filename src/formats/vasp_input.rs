@@ -157,7 +157,7 @@ fn test_poscar_position() {
 
 // parse molecule
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse%20molecule][parse molecule:1]]
 /// Read Molecule from stream in VASP/POSCAR format
 pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
     let read_ion_positions = many1(poscar_position);
@@ -247,7 +247,7 @@ Direct
 
 // format molecule
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format molecule][format molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format%20molecule][format molecule:1]]
 const POSCAR_SFLAGS_KEY: &str = "vasp/poscar/sflags";
 
 fn format_molecule(mol: &Molecule) -> String {
@@ -374,9 +374,6 @@ impl ChemicalFile for PoscarFile {
     }
 }
 
-// read all available stream at once
-impl Partition for PoscarFile {}
-
 impl ParseMolecule for PoscarFile {
     fn parse_molecule(&self, input: &str) -> Result<Molecule> {
         let (_, mol) = parse_poscar_molecule(input).map_err(|e| format_err!("parse POSCAR format failure: {:?}", e))?;
@@ -384,3 +381,10 @@ impl ParseMolecule for PoscarFile {
     }
 }
 // chemfile:1 ends here
+
+// impl partition
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20partition][impl partition:1]]
+// read all available stream at once
+impl ReadPart for PoscarFile {}
+// impl partition:1 ends here

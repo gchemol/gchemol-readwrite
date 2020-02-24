@@ -1,7 +1,8 @@
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
-use super::{parser::*, *};
+use super::parser::*;
+use super::*;
 // imports:1 ends here
 
 // atoms
@@ -21,7 +22,7 @@ fn read_atom_xyz(s: &str) -> IResult<&str, (&str, Point3)> {
 }
 
 #[test]
-fn test_read_atom() {
+fn test_xyz_read_atom() {
     let line = "C -11.4286 -1.3155  0.0000\n";
     let (_, (symbol, _)) = read_atom_xyz(line).expect("xyz atom");
     assert_eq!("C", symbol);
@@ -42,7 +43,7 @@ fn read_atoms_pxyz(s: &str) -> IResult<&str, Vec<(&str, Point3)>> {
 }
 
 #[test]
-fn test_read_atoms() {
+fn test_xyz_read_atoms() {
     let txt = "C -11.4286  1.7645  0.0000
 C -10.0949  0.9945  0.0000
 C -10.0949 -0.5455  0.0000
@@ -66,6 +67,7 @@ fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3)>)> {
         ({
             if n != atoms.len() {
                 warn!("Informal xyz format: expect {} atoms, but found {}", n, atoms.len());
+                debug!("{:?}", s);
             }
             (title.trim(), atoms)
         })
@@ -73,7 +75,7 @@ fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3)>)> {
 }
 
 #[test]
-fn test_read_molecule_xyz() {
+fn test_xyz_read_molecule() {
     let txt = "12
 
 C -11.4286  1.7645  0.0000
@@ -94,9 +96,9 @@ H -13.7062  1.5395  0.0000";
 }
 // xyz/pxyz:1 ends here
 
-// parse
+// molecule
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
     let mol = if plain {
@@ -144,15 +146,7 @@ fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
     }
     mol
 }
-// parse:1 ends here
-
-// format
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
-fn format_molecule() {
-    todo!()
-}
-// format:1 ends here
+// molecule:1 ends here
 
 // xyz
 
@@ -173,26 +167,29 @@ impl ChemicalFile for XyzFile {
     fn format_molecule(&self, mol: &Molecule) -> Result<String> {
         // meta information
         let mut lines = String::new();
-        lines.push_str(&format!("{}\n", mol.natoms()));
-        lines.push_str(&format!("{}\n", mol.title()));
+        if mol.is_periodic() {
+            writeln!(&mut lines, "{}", mol.natoms() + 3)?;
+        } else {
+            writeln!(&mut lines, "{}", mol.natoms())?;
+        }
+        writeln!(&mut lines, "{}", mol.title())?;
 
         // coordinates
         for (_, a) in mol.atoms() {
             let p = a.position();
             let v = a.momentum();
             let sym = a.symbol();
-            let s = format!(
-                "{:6} {:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}\n",
+            writeln!(
+                &mut lines,
+                "{:6} {:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}",
                 sym, p[0], p[1], p[2], v[0], v[1], v[2]
-            );
-            lines.push_str(&s);
+            )?;
         }
 
         // write lattice transition vectors using TV symbol.
         if let Some(lat) = &mol.lattice {
             for v in lat.vectors().iter() {
-                let line = format!("TV {:-12.8} {:-12.8} {:-12.8}\n", v[0], v[1], v[2]);
-                lines.push_str(&line);
+                writeln!(&mut lines, "TV {:-12.8} {:-12.8} {:-12.8}", v[0], v[1], v[2]);
             }
         }
 
@@ -259,15 +256,28 @@ impl ChemicalFile for PlainXyzFile {
 // impl partition
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
-impl Partition for XyzFile {
-    fn read_next(&self, context: ReadContext) -> bool {
-        !context.next_line().trim().parse::<usize>().is_ok()
+impl ReadPart for XyzFile {
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        let n = context.number_of_lines();
+        // the first line contains the number of atoms in this part
+        if let Ok(natoms) = context.line(1).trim().parse::<usize>() {
+            warn!("context text: {:?}", context.text());
+            if n >= natoms + 2 {
+                ReadAction::Done(n)
+            } else {
+                ReadAction::Need(natoms + 2 - n)
+            }
+        } else {
+            warn!("context text: {:?}", context.text());
+            warn!("context line: {:?}", context.line(1));
+            ReadAction::Error("invalid xyz title".into())
+        }
     }
 }
 
-impl Partition for PlainXyzFile {
-    fn read_next(&self, context: ReadContext) -> bool {
-        !context.this_line().trim().is_empty()
+impl ReadPart for PlainXyzFile {
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        Terminated(|line: &str| line.trim().is_empty()).read_next(context)
     }
 }
 // impl partition:1 ends here

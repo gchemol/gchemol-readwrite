@@ -440,7 +440,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 
 // impl chemfile
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20chemfile][impl chemfile:1]]
 #[derive(Copy, Clone, Debug)]
 pub struct Mol2File();
 
@@ -475,12 +475,12 @@ impl ParseMolecule for Mol2File {
 }
 // impl chemfile:1 ends here
 
-// impl partition
+// new
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
-impl Partition for Mol2File {
-    fn read_next(&self, context: ReadContext) -> bool {
-        !context.next_line().starts_with("@<TRIPOS>MOLECULE")
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+impl ReadPart for Mol2File {
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        Preceded(|line: &str| line.starts_with("@<TRIPOS>MOLECULE")).read_next(context)
     }
 }
 
@@ -495,4 +495,4 @@ fn test_mol2() -> Result<()> {
 
     Ok(())
 }
-// impl partition:1 ends here
+// new:1 ends here

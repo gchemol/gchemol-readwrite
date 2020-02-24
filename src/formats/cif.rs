@@ -370,7 +370,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 
 // impl chemfile
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20chemfile][impl chemfile:1]]
 #[derive(Clone, Copy, Debug)]
 pub struct CifFile();
 
@@ -408,10 +408,14 @@ impl ParseMolecule for CifFile {
         r
     }
 }
+// impl chemfile:1 ends here
 
-impl Partition for CifFile {
-    fn read_next(&self, context: ReadContext) -> bool {
-        !context.next_line().starts_with("data_")
+// new
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+impl ReadPart for CifFile {
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        Preceded(|line: &str| line.starts_with("data_")).read_next(context)
     }
 }
-// impl chemfile:1 ends here
+// new:1 ends here

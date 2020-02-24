@@ -18,11 +18,15 @@ fn test_template_render() -> Result<()> {
 
     let tpl = "./tests/files/templates/xyz.hbs";
     let s = mol.render_with(tpl.as_ref())?;
+    let m = Molecule::from_str(&s, "text/xyz")?;
+    assert_eq!(mol.natoms(), m.natoms());
+    // assert!(m.is_periodic());
 
     let tpl = "./tests/files/templates/xyz.tera";
     let s = mol.render_with(tpl.as_ref())?;
     let m = Molecule::from_str(&s, "text/xyz")?;
     assert_eq!(mol.natoms(), m.natoms());
+    assert!(m.is_periodic());
 
     Ok(())
 }

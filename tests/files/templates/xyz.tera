@@ -1,5 +1,5 @@
-{{molecule.number_of_atoms}}
-{{molecule.title | trim}}
+{% if molecule.unit_cell %} {{molecule.number_of_atoms + 3}} {% else %} {{molecule.number_of_atoms}} {% endif %}
+{{molecule.title | urlencode }}
 {% for a in molecule.atoms -%}
 {{ a.symbol | format(width=3) }} {{a.x | format }} {{a.y | format }} {{a.z | format(align="left", prec=12, width=20) }}
 {% endfor -%}

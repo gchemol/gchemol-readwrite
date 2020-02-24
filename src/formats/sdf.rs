@@ -18,7 +18,7 @@ use super::*;
 
 // counts line
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*counts line][counts line:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*counts%20line][counts line:1]]
 // aaabbblllfffcccsssxxxrrrpppiiimmmvvvvvv
 // aaa = number of atoms
 // bbb = number of bonds
@@ -242,10 +242,14 @@ impl ParseMolecule for SdfFile {
         Ok(mol)
     }
 }
+// chemfile:1 ends here
 
-impl Partition for SdfFile {
-    fn read_next(&self, context: ReadContext) -> bool {
-        context.this_line() != "$$$$\n"
+// new
+
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+impl ReadPart for SdfFile {
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        Terminated(|line: &str| line == "$$$$\n").read_next(context)
     }
 }
-// chemfile:1 ends here
+// new:1 ends here
