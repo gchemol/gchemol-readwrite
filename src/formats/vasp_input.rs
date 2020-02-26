@@ -157,7 +157,7 @@ fn test_poscar_position() {
 
 // parse molecule
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse%20molecule][parse molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
 /// Read Molecule from stream in VASP/POSCAR format
 pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
     let read_ion_positions = many1(poscar_position);
@@ -247,7 +247,7 @@ Direct
 
 // format molecule
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format%20molecule][format molecule:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format molecule][format molecule:1]]
 const POSCAR_SFLAGS_KEY: &str = "vasp/poscar/sflags";
 
 fn format_molecule(mol: &Molecule) -> String {
@@ -366,7 +366,29 @@ impl ChemicalFile for PoscarFile {
     }
 
     fn possible_extensions(&self) -> Vec<&str> {
-        vec!["POSCAR", "CONTCAR", ".poscar", ".vasp"]
+        vec!["poscar", "vasp"]
+    }
+
+    /// Determine if file `filename` is parable according to its supported file
+    /// extensions
+    fn parsable(&self, path: &Path) -> bool {
+        let possible_filenames = vec!["CONTCAR", "POSCAR"];
+        if let Some(e) = path.extension() {
+            let e = e.to_string_lossy().to_lowercase();
+            self.possible_extensions().contains(&e.as_str())
+        } else
+        // no extension: check file name
+        {
+            if let Some(filename) = path.file_name() {
+                let f = filename.to_string_lossy().to_uppercase();
+                for x in possible_filenames {
+                    if f.starts_with(x) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
     }
 
     fn format_molecule(&self, mol: &Molecule) -> Result<String> {
@@ -380,11 +402,28 @@ impl ParseMolecule for PoscarFile {
         Ok(mol)
     }
 }
+
+#[test]
+fn test_vasp_input_parsable() {
+    let cf = PoscarFile();
+    let parsable = |x: &str| cf.parsable(x.as_ref());
+
+    assert!(parsable("POSCAR"));
+    assert!(parsable("POSCAR1"));
+    assert!(parsable("POSCAR-1"));
+    assert!(!parsable("POSCAR.1"));
+    assert!(parsable("CONTCAR"));
+    assert!(parsable("CONTCAR1"));
+    assert!(parsable("POSCAR2"));
+    assert!(parsable("poscar2"));
+    assert!(parsable("x.poscar"));
+    assert!(parsable("x.vasp"));
+}
 // chemfile:1 ends here
 
 // impl partition
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20partition][impl partition:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
 // read all available stream at once
 impl ReadPart for PoscarFile {}
 // impl partition:1 ends here
