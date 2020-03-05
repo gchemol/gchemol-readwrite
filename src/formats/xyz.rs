@@ -1,11 +1,7 @@
-// imports
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
 use super::parser::*;
 use super::*;
 // imports:1 ends here
-
-// atoms
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atoms][atoms:1]]
 type Point3 = [f64; 3];
@@ -54,8 +50,6 @@ C -11.4286 -1.3155  0.0000
 }
 // atoms:1 ends here
 
-// xyz/pxyz
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*xyz/pxyz][xyz/pxyz:1]]
 // return molecule title and atoms
 fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3)>)> {
@@ -95,8 +89,6 @@ H -13.7062  1.5395  0.0000";
     assert_eq!(12, atoms.len());
 }
 // xyz/pxyz:1 ends here
-
-// molecule
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
@@ -147,8 +139,6 @@ fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
     mol
 }
 // molecule:1 ends here
-
-// xyz
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*xyz][xyz:1]]
 /// Classical XYZ format
@@ -204,8 +194,6 @@ impl ParseMolecule for XyzFile {
 }
 // xyz:1 ends here
 
-// plain xyz
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*plain xyz][plain xyz:1]]
 /// Plain xyz coordinates with atom symbols (no atom count line and title line)
 #[derive(Debug, Clone, Copy)]
@@ -253,23 +241,20 @@ impl ChemicalFile for PlainXyzFile {
 }
 // plain xyz:1 ends here
 
-// impl partition
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
 impl ReadPart for XyzFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         let n = context.number_of_lines();
         // the first line contains the number of atoms in this part
         if let Ok(natoms) = context.line(1).trim().parse::<usize>() {
-            warn!("context text: {:?}", context.text());
             if n >= natoms + 2 {
                 ReadAction::Done(n)
             } else {
                 ReadAction::Need(natoms + 2 - n)
             }
         } else {
-            warn!("context text: {:?}", context.text());
-            warn!("context line: {:?}", context.line(1));
+            warn!("read_part context text: {:?}", context.text());
+            warn!("read_part context line: {:?}", context.line(1));
             ReadAction::Error("invalid xyz title".into())
         }
     }
