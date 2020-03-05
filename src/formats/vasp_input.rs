@@ -164,7 +164,7 @@ pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
     do_parse!(
         s,
         title            : read_until_eol        >> // system title
-        lattice_constant : double >> eol         >> // lattice constant
+        lattice_constant : read_double           >> // lattice constant
         cell_vectors     : poscar_cell_vectors   >> // lattice vectors
         ion_types        : poscar_ion_types      >> // ion types
         select_direct    : poscar_select_direct  >> // selective line and direct line

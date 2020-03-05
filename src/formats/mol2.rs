@@ -440,7 +440,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 
 // impl chemfile
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20chemfile][impl chemfile:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
 #[derive(Copy, Clone, Debug)]
 pub struct Mol2File();
 

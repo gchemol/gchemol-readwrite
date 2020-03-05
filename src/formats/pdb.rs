@@ -1,5 +1,3 @@
-// header
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
 // parses the following record types in a PDB file:
 //
@@ -10,38 +8,10 @@
 // CONECT
 // header:1 ends here
 
-// imports
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
 use super::*;
 use super::parser::*;
 // imports:1 ends here
-
-// crystal
-// # References
-// - [[https://www.wwpdb.org/documentation/file-format-content/format33/sect8.html][wwPDB Format version 3.3: Crystallographic and Coordinate Transformation Section]]
-
-// # Example
-// CRYST1   18.126   18.126    7.567  90.00  90.00 120.00 P6/MMM
-// ORIGX1      1.000000  0.000000  0.000000        0.00000
-// ORIGX2      0.000000  1.000000  0.000000        0.00000
-// ORIGX3      0.000000  0.000000  1.000000        0.00000
-// SCALE1      0.055169  0.031852  0.000000        0.00000
-// SCALE2      0.000000  0.063704  0.000000        0.00000
-// SCALE3      0.000000  0.000000  0.132153        0.00000
-
-// # Record Format
-//  COLUMNS      DATA  TYPE    FIELD          DEFINITION
-//  -------------------------------------------------------------
-//  1 -  6       Record name   "CRYST1"
-//  7 - 15       Real(9.3)     a              a (Angstroms).
-//  16 - 24      Real(9.3)     b              b (Angstroms).
-//  25 - 33      Real(9.3)     c              c (Angstroms).
-//  34 - 40      Real(7.2)     alpha          alpha (degrees).
-//  41 - 47      Real(7.2)     beta           beta (degrees).
-//  48 - 54      Real(7.2)     gamma          gamma (degrees).
-//  56 - 66      LString       sGroup         Space  group.
-//  67 - 70      Integer       z              Z value.
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*crystal][crystal:1]]
 fn read_lattice(s: &str) -> IResult<&str, Lattice> {
@@ -91,13 +61,6 @@ ATOM      3 T1   MOL     2      -5.234   6.009   1.536  1.00  0.00          Si1+
 }
 // crystal:1 ends here
 
-// element
-// # guess element from data in columns 55-80
-// 55 - 60        Real(6.2)     occupancy    Occupancy.
-// 61 - 66        Real(6.2)     tempFactor   Temperature  factor.
-// 77 - 78        LString(2)    element      Element symbol, right-justified.
-// 79 - 80        LString(2)    charge       Charge  on the atom.
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*element][element:1]]
 fn guess_element<'a>(name: &'a str, r: &'a str) -> Option<&'a str> {
     // 1. return element symbol without whitespace
@@ -138,16 +101,7 @@ fn test_guess_element() {
 }
 // element:1 ends here
 
-// atom records
-// # Example
-// ATOM      3  SI2 SIO2X   1       3.484   3.484   3.474  1.00  0.00      UC1 SI
-// # Format
-// 55 - 60        Real(6.2)     occupancy    Occupancy.
-// 61 - 66        Real(6.2)     tempFactor   Temperature  factor.
-// 77 - 78        LString(2)    element      Element symbol, right-justified.
-// 79 - 80        LString(2)    charge       Charge  on the atom.
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atom%20records][atom records:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atom records][atom records:1]]
 // Return Atom index (sn) and Atom object
 fn read_atom_record(s: &str) -> IResult<&str, (usize, Atom)> {
     let tag_atom = alt((tag("ATOM  "), tag("HETATM")));
@@ -245,30 +199,7 @@ HETATM 1641  C8  MID E   5      -2.096   3.018  29.071  1.00 30.82           C\n
 }
 // atom records:1 ends here
 
-// bond records
-// # References
-// - https://www.wwpdb.org/documentation/file-format-content/format33/sect10.html
-
-// # Format
-// COLUMNS       DATA  TYPE      FIELD        DEFINITION
-// -------------------------------------------------------------------------
-//  1 -  6       Record name    "CONECT"
-//  7 - 11       Integer        serial       Atom  serial number
-// 12 - 16       Integer        serial       Serial number of bonded atom
-// 17 - 21       Integer        serial       Serial  number of bonded atom
-// 22 - 26       Integer        serial       Serial number of bonded atom
-// 27 - 31       Integer        serial       Serial number of bonded atom
-
-// # Example
-// CONECT 1179  746 1184 1195 1203
-// CONECT 1179 1211 1222
-// CONECT 1021  544 1017 1020 1022
-
-// # NOTE
-// Expected to fail if atom index is larger than 9999 since neighboring numbers
-// will overlap
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bond%20records][bond records:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bond records][bond records:1]]
 fn read_bond_record(s: &str) -> IResult<&str, Vec<(usize, usize)>> {
     let tag_conect = tag("CONECT");
     let atom_sn = map_res(take_s(5), |x| x.trim().parse::<usize>());
@@ -356,18 +287,16 @@ CONECT 2043 2042 2044
 }
 // bond records:1 ends here
 
-// parse
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
 // quick jump to starting position
-fn jump1(s: &str) -> nom::IResult<&str, ()> {
+fn jump1(s: &str) -> IResult<&str, ()> {
     let possible_tags = alt((tag("CRYST1"), tag("ATOM  "), tag("HETATM")));
     let (r, _) = many_till(read_line, peek(possible_tags))(s)?;
 
     Ok((r, ()))
 }
 
-fn read_molecule(s: &str) -> nom::IResult<&str, Molecule> {
+fn read_molecule(s: &str) -> IResult<&str, Molecule> {
     let read_lattice = opt(read_lattice);
     let read_bonds = opt(read_bonds);
     // recognize optional record between Atom and Bond
@@ -469,8 +398,6 @@ END\n
 }
 // parse:1 ends here
 
-// format
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
 fn format_molecule(mol: &Molecule) -> String {
     if mol.natoms() > 9999 {
@@ -494,8 +421,6 @@ fn format_molecule(mol: &Molecule) -> String {
     lines
 }
 // format:1 ends here
-
-// chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
 #[derive(Clone, Copy, Debug)]
@@ -522,8 +447,6 @@ impl ParseMolecule for PdbFile {
     }
 }
 // chemfile:1 ends here
-
-// new
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
 impl ReadPart for PdbFile {
