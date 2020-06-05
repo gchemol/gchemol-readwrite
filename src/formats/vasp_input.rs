@@ -1,20 +1,11 @@
-// header
-// VASP POSCAR file format:
-// - http://cms.mpi.univie.ac.at/vasp/guide/node59.html
-
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
 
 // header:1 ends here
-
-// imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
 use super::parser::*;
 use super::*;
 // imports:1 ends here
-
-// cell
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*cell][cell:1]]
 fn poscar_cell_vectors(s: &str) -> IResult<&str, [[f64; 3]; 3]> {
@@ -39,8 +30,6 @@ fn test_poscar_cell_vectors() {
 }
 // cell:1 ends here
 
-// elements
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*elements][elements:1]]
 fn poscar_ion_types(s: &str) -> IResult<&str, (Vec<&str>, Vec<usize>)> {
     let elements = separated_list(space1, alpha1);
@@ -61,8 +50,6 @@ fn test_formats_vasp_poscar_ion_types() {
     assert_eq!(5, v.0.len());
 }
 // elements:1 ends here
-
-// coordinates
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*coordinates][coordinates:1]]
 // Selective dynamics -- optional, can be omitted
@@ -155,8 +142,6 @@ fn test_poscar_position() {
 }
 // coordinates:1 ends here
 
-// parse molecule
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
 /// Read Molecule from stream in VASP/POSCAR format
 pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
@@ -199,9 +184,9 @@ pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
                     pos.into()
                 };
                 let mut a = Atom::new(sym, pos);
-                // FIXME: adhoc hacking
-                if sflags.is_some() {
-                    a.properties.store(POSCAR_SFLAGS_KEY, sflags.unwrap());
+                // set atom freezing mask according to selective dynamics flags
+                if let Some([xs, ys, zs]) = sflags {
+                    a.set_freezing([!xs, !ys, !zs]);
                 }
                 mol.add_atom(i+1, a);
             }
@@ -245,11 +230,7 @@ Direct
 }
 // parse molecule:1 ends here
 
-// format molecule
-
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format molecule][format molecule:1]]
-const POSCAR_SFLAGS_KEY: &str = "vasp/poscar/sflags";
-
 fn format_molecule(mol: &Molecule) -> String {
     let mut lines = String::new();
     let title = mol.title();
@@ -280,30 +261,22 @@ fn format_molecule(mol: &Molecule) -> String {
     lines.push_str("Selective dynamics\nDirect\n");
     for (_, a) in mol.atoms() {
         let p = lattice.to_frac(a.position());
-        // FIXME: just a temporary workaround
-        let line = if a.properties.contains_key(POSCAR_SFLAGS_KEY) {
-            let sflags: [bool; 3] = a
-                .properties
-                .load(POSCAR_SFLAGS_KEY)
-                .expect("vasp selective_dynamics flags");
-            format!(
-                "{x:18.12} {y:18.12} {z:18.12} {fx} {fy} {fz}\n",
-                x = p.x,
-                y = p.y,
-                z = p.z,
-                fx = if sflags[0] { "T" } else { "F" },
-                fy = if sflags[1] { "T" } else { "F" },
-                fz = if sflags[2] { "T" } else { "F" },
-            )
-        } else {
-            format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = p.x, y = p.y, z = p.z)
-        };
-        let line = format!("{x:18.12} {y:18.12} {z:18.12} T T T\n", x = p.x, y = p.y, z = p.z);
+        let freezing = a.freezing();
+        let line = format!(
+            "{x:18.12} {y:18.12} {z:18.12} {fx} {fy} {fz}\n",
+            x = p.x,
+            y = p.y,
+            z = p.z,
+            fx = if freezing[0] { "F" } else { "T" },
+            fy = if freezing[1] { "F" } else { "T" },
+            fz = if freezing[2] { "F" } else { "T" },
+        );
         lines.push_str(&line);
     }
 
     // final blank line
     lines.push_str("\n");
+   
     // TODO: write velocities
 
     lines
@@ -353,8 +326,6 @@ fn test_poscar_symbols_counts() {
     assert_eq!([("C", 1)].to_vec(), x);
 }
 // format molecule:1 ends here
-
-// chemfile
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
 #[derive(Clone, Copy, Debug)]
@@ -420,8 +391,6 @@ fn test_vasp_input_parsable() {
     assert!(parsable("x.vasp"));
 }
 // chemfile:1 ends here
-
-// impl partition
 
 // [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
 // read all available stream at once

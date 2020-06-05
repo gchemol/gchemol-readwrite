@@ -119,7 +119,7 @@ fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
         match a.kind() {
             AtomKind::Dummy(x) => {
                 if x == "TV" {
-                    debug!("found TV dummy atom.");
+                    trace!("found TV dummy atom.");
                     lat_vectors.push(a.position());
                 }
                 None
