@@ -1,20 +1,14 @@
-// header
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
-// Data will be parsed:
+// [[file:../../gchemol-readwrite.note::*header][header:1]]
+// The following data will be parsed:
 // Lattice, Atoms, Bonds
 // header:1 ends here
 
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::*;
 use super::parser::*;
 // imports:1 ends here
 
-// base
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*base][base:1]]
+// [[file:../../gchemol-readwrite.note::*base][base:1]]
 /// Recognizes a float point number with uncertainty brackets
 ///
 /// # Example
@@ -48,9 +42,7 @@ fn test_cif_float_number() {
 }
 // base:1 ends here
 
-// cell
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*cell][cell:1]]
+// [[file:../../gchemol-readwrite.note::*cell][cell:1]]
 fn cell_params_xx(s: &str) -> IResult<&str, (&str, f64)> {
     let tag_cell = tag("_cell_");
     do_parse!(
@@ -101,22 +93,7 @@ _cell_angle_gamma                 90.0000
 }
 // cell:1 ends here
 
-// atoms
-// # Example
-// loop_
-// _atom_site_label
-// _atom_site_type_symbol
-// _atom_site_fract_x
-// _atom_site_fract_y
-// _atom_site_fract_z
-// Cu1 Cu 0.20761(4) 0.65105(3) 0.41306(4)
-// O1 O 0.4125(2) 0.6749(2) 0.5651(3)
-// O2 O 0.1662(2) 0.4540(2) 0.3821(3)
-// O3 O 0.4141(4) 0.3916(3) 0.6360(4)
-// N1 N 0.2759(3) 0.8588(2) 0.4883(3)
-// ...
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atoms][atoms:1]]
+// [[file:../../gchemol-readwrite.note::*atoms][atoms:1]]
 fn atom_site_column_name(s: &str) -> IResult<&str, &str> {
     let col_name = preceded(tag("_atom_site_"), not_space);
     do_parse!(s, space0 >> x: col_name >> eol >> (x))
@@ -207,10 +184,10 @@ fn parse_atoms(s: &str) -> Result<Vec<Atom>> {
         let (_, fy) = double_cif(sfy).expect("invalid fcoords y");
         let (_, fz) = double_cif(sfz).expect("invalid fcoords z");
         // parse atom symbol
-        let lbl = row[ilbl];
-        // TODO: assign atom label
         let sym = row[isym];
-        let atom: Atom = (sym, [fx, fy, fz]).into();
+        let mut atom: Atom = (sym, [fx, fy, fz]).into();
+        //assign atom label
+        atom.set_label(row[ilbl]);
         atoms.push(atom);
     }
 
@@ -248,9 +225,7 @@ fn test_read_cif_atoms() -> Result<()> {
 }
 // atoms:1 ends here
 
-// parse
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
+// [[file:../../gchemol-readwrite.note::*parse][parse:1]]
 fn cif_title(s: &str) -> IResult<&str, &str> {
     let tag_data = tag("data_");
     do_parse!(s, tag_data >> t: not_space >> eol >> (t))
@@ -280,9 +255,7 @@ fn parse_molecule(s: &str) -> Result<Molecule> {
 }
 // parse:1 ends here
 
-// format
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+// [[file:../../gchemol-readwrite.note::*format][format:1]]
 /// Represent molecule in .cif format
 fn format_molecule(mol: &Molecule) -> Result<String> {
     let mut lines = String::new();
@@ -368,9 +341,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 }
 // format:1 ends here
 
-// impl chemfile
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20chemfile][impl chemfile:1]]
+// [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
 #[derive(Clone, Copy, Debug)]
 pub struct CifFile();
 
@@ -410,9 +381,7 @@ impl ParseMolecule for CifFile {
 }
 // impl chemfile:1 ends here
 
-// new
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::*new][new:1]]
 impl ReadPart for CifFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Preceded(|line: &str| line.starts_with("data_")).read_next(context)
