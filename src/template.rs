@@ -1,6 +1,4 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use indexmap::{indexmap, IndexMap};
 use serde_json::json;
 
@@ -8,16 +6,12 @@ use gchemol_core::{Atom, Molecule};
 use gut::prelude::*;
 // imports:1 ends here
 
-// mods
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*mods][mods:1]]
+// [[file:../gchemol-readwrite.note::*mods][mods:1]]
 mod hbs;
 mod tera;
 // mods:1 ends here
 
-// traits
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*traits][traits:1]]
+// [[file:../gchemol-readwrite.note::*traits][traits:1]]
 /// Render molecule in user defined format
 pub trait TemplateRendering {
     /// Render with input template file.
@@ -37,15 +31,14 @@ impl TemplateRendering for Molecule {
 }
 // traits:1 ends here
 
-// core
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*core][core:1]]
+// [[file:../gchemol-readwrite.note::*core][core:1]]
 #[derive(Debug, Serialize)]
 struct AtomData {
     index: usize,
     element_index: usize,
     symbol: String,
     number: usize,
+    freezing: [bool; 3],
     x: f64,
     y: f64,
     z: f64,
@@ -64,6 +57,7 @@ impl Default for AtomData {
             element_index: 0,
             symbol: "C".into(),
             number: 6,
+            freezing: [false; 3],
             x: 0.0,
             y: 0.0,
             z: 0.0,
@@ -161,10 +155,7 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
         let index = i;
         let number = a.number();
         let symbol = a.symbol().to_string();
-        let [fx, fy, fz] = mol
-            .lattice
-            .map(|lat| lat.to_frac([x, y, z]).into())
-            .unwrap_or([0.0; 3]);
+        let [fx, fy, fz] = mol.lattice.map(|lat| lat.to_frac([x, y, z]).into()).unwrap_or([0.0; 3]);
 
         let element_index = {
             let (x, _, _) = element_types.get_full(a.symbol()).expect("element type index");
@@ -172,11 +163,13 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
         };
 
         let [vx, vy, vz] = a.momentum();
+        let freezing = a.freezing();
         atoms.push(AtomData {
             index,
             element_index,
             symbol,
             number,
+            freezing,
             x,
             y,
             z,
