@@ -1,13 +1,9 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::*;
 use super::parser::*;
 // imports:1 ends here
 
-// header
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
+// [[file:../../gchemol-readwrite.note::*header][header:1]]
 // Gaussian input file
 //
 // Reference
@@ -15,11 +11,7 @@ use super::parser::*;
 // http://gaussian.com/input/?tabid=0
 // header:1 ends here
 
-// link0 section
-// Reference
-// - https://gaussian.com/link0/
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*link0%20section][link0 section:1]]
+// [[file:../../gchemol-readwrite.note::*link0 section][link0 section:1]]
 fn link0_cmd(s: &str) -> IResult<&str, &str> {
     let prefix = tag("%");
     do_parse!(s, prefix >> cmd: read_until_eol >> (cmd))
@@ -51,18 +43,7 @@ fn test_link0_section() {
 }
 // link0 section:1 ends here
 
-// route section
-// The route section of a Gaussian job is initiated by a pound sign (#) as the
-// first non-blank character of a line. The remainder of the section is in
-// free-field format. For most jobs, all of the information can be placed on this
-// first line, but overflow to other lines (which may but need not begin with a #
-// symbol) is permissible. The route section must be terminated by a blank line.
-
-// References
-// - https://gaussian.com/route/
-
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*route%20section][route section:1]]
+// [[file:../../gchemol-readwrite.note::*route section][route section:1]]
 fn blank_line(s: &str) -> IResult<&str, ()> {
     do_parse!(s, space0 >> eol >> (()))
 }
@@ -96,11 +77,7 @@ B3LYP/6-31+G** test geom=connect
 }
 // route section:1 ends here
 
-// title section
-// Title section: Brief description of the calculation (blank line-terminated).
-
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*title%20section][title section:1]]
+// [[file:../../gchemol-readwrite.note::*title section][title section:1]]
 fn title_section(s: &str) -> IResult<&str, String> {
     let title_lines = many_till(read_until_eol, blank_line);
     do_parse!(
@@ -113,9 +90,7 @@ fn title_section(s: &str) -> IResult<&str, String> {
 }
 // title section:1 ends here
 
-// charge and spin multiplicity
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*charge%20and%20spin%20multiplicity][charge and spin multiplicity:1]]
+// [[file:../../gchemol-readwrite.note::*charge and spin multiplicity][charge and spin multiplicity:1]]
 // Specifies the net electric charge (a signed integer) and the spin
 // multiplicity (usually a positive integer)
 fn read_charge_and_spin_list(s: &str) -> IResult<&str, Vec<isize>> {
@@ -134,9 +109,7 @@ fn test_charge_and_spin() {
 }
 // charge and spin multiplicity:1 ends here
 
-// element info
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*element%20info][element info:1]]
+// [[file:../../gchemol-readwrite.note::*element info][element info:1]]
 // single atom parameter entry
 // Fragment=1, or Iso=13, or Spin=3
 fn atom_param(s: &str) -> IResult<&str, (&str, &str)> {
@@ -183,10 +156,7 @@ fn test_gjf_atom_mm_info() {
 }
 // element info:1 ends here
 
-// oniom info
-// atom [freeze-code] coordinate-spec layer [link-atom [bonded-to [scale-fac1 [scale-fac2 [scale-fac3]]]]]
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*oniom%20info][oniom info:1]]
+// [[file:../../gchemol-readwrite.note::*oniom info][oniom info:1]]
 // C-CA--0.25   0   -4.703834   -1.841116   -0.779093 L
 // C-CA--0.25   0   -3.331033   -1.841116   -0.779093 L H-HA-0.1  3
 fn atom_oniom_params(s: &str) -> IResult<&str, &str> {
@@ -207,9 +177,7 @@ fn test_gjf_atom_oniom_params() {
 }
 // oniom info:1 ends here
 
-// atom line
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atom%20line][atom line:1]]
+// [[file:../../gchemol-readwrite.note::*atom line][atom line:1]]
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -274,9 +242,7 @@ fn atom_line(s: &str) -> IResult<&str, GaussianAtom> {
 }
 // atom line:1 ends here
 
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
+// [[file:../../gchemol-readwrite.note::*test][test:1]]
 #[test]
 fn test_gjf_atom_line() {
     let line = "C-CA--0.25(fragment=1,iso=13,spin=3)  -1 0.00   0.00   0.00 L H-HA-0.1  3\n";
@@ -317,9 +283,7 @@ fn test_gjf_atom_line() {
 }
 // test:1 ends here
 
-// connectivity specs
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*connectivity%20specs][connectivity specs:1]]
+// [[file:../../gchemol-readwrite.note::*connectivity specs][connectivity specs:1]]
 // Connectivity specs example:
 //
 // 1 2 1.0 3 1.0 4 1.0 5 1.0
@@ -358,9 +322,7 @@ fn test_gjf_connectivity() {
 }
 // connectivity specs:1 ends here
 
-// parse
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
+// [[file:../../gchemol-readwrite.note::*parse][parse:1]]
 fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
     let link0 = opt(link0_section);
     do_parse!(
@@ -383,8 +345,30 @@ fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
         bonds: read_bonds  >>        // connectivity section
         ({
             let mut mol = Molecule::default();
-            let atoms = atoms.into_iter().map(|x| Atom::new(x.element_label, x.position));
+            let mut lat_vectors = vec![];
+            let atoms = atoms.into_iter().filter_map(|x| {
+                // Handle dummy TV atoms (transitional vector)
+                if &x.element_label.to_uppercase() == "TV" {
+                    debug!("found TV dummy atom");
+                    lat_vectors.push(x.position);
+                    None
+                } else {
+                    let mut a = Atom::new(x.element_label, x.position);
+                    if let Some(f) = x.frozen_code {
+                        if f == -1 {
+                            a.set_freezing([true; 3]);
+                        }
+                    }
+                    Some(a)
+                }
+            });
             mol.add_atoms_from((1..).zip(atoms));
+            if lat_vectors.len() == 3 {
+                let lat = Lattice::new([lat_vectors[0], lat_vectors[1], lat_vectors[2]]);
+                mol.set_lattice(lat);
+            } else if !lat_vectors.is_empty() {
+                error!("Expect 3, but found {} TV atoms.", lat_vectors.len());
+            }
 
             // handle bonds
             if let Some(bonds) = bonds {
@@ -426,7 +410,7 @@ Title Card
 Required
 
 0 1
- C(Fragment=1)    0         -1.29639700         -0.54790000         -0.04565800 L
+ C(Fragment=1)   -1         -1.29639700         -0.54790000         -0.04565800 L
  H(Fragment=1)    0         -0.94903500         -1.58509500         -0.09306500 L
  H(Fragment=1)    0         -0.93491200         -0.03582400         -0.94211800 L
  H(Fragment=1)    0         -2.39017900         -0.56423400         -0.09090100 L
@@ -469,9 +453,7 @@ Required
 }
 // parse:1 ends here
 
-// format
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+// [[file:../../gchemol-readwrite.note::*format][format:1]]
 // TODO: atom properties
 fn format_atom(a: &Atom) -> String {
     let [x, y, z] = a.position();
@@ -536,9 +518,7 @@ fn format_molecule(mol: &Molecule) -> String {
 }
 // format:1 ends here
 
-// impl chemfile
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl%20chemfile][impl chemfile:1]]
+// [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
 #[derive(Clone, Copy, Debug)]
 /// plain xyz coordinates with atom symbols
 pub struct GaussianInputFile();
@@ -566,9 +546,7 @@ impl ParseMolecule for GaussianInputFile {
 }
 // impl chemfile:1 ends here
 
-// new
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::*new][new:1]]
 impl ReadPart for GaussianInputFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Terminated(|line: &str| {
