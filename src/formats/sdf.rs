@@ -1,6 +1,4 @@
-// header
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
+// [[file:../../gchemol-readwrite.note::*header][header:1]]
 // MDL SD file format
 //
 // SD file format reference
@@ -9,21 +7,17 @@
 // - http://download.accelrys.com/freeware/ctfile-formats/ctfile-formats.zip
 // header:1 ends here
 
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::parser::*;
 use super::*;
 // imports:1 ends here
 
-// counts line
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*counts%20line][counts line:1]]
+// [[file:../../gchemol-readwrite.note::*counts line][counts line:1]]
 // aaabbblllfffcccsssxxxrrrpppiiimmmvvvvvv
 // aaa = number of atoms
 // bbb = number of bonds
 fn counts_line(s: &str) -> IResult<&str, (usize, usize)> {
-    let read_count = map_res(take_s(3), |x: &str| x.trim().parse::<usize>());
+    let mut read_count = map_res(take_s(3), |x: &str| x.trim().parse::<usize>());
     do_parse!(
         s,
         na: read_count >> // number of atoms
@@ -42,15 +36,13 @@ fn test_sdf_counts_line() {
 }
 // counts line:1 ends here
 
-// atoms
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atoms][atoms:1]]
+// [[file:../../gchemol-readwrite.note::*atoms][atoms:1]]
 // Example input
 // -------------
 //    -1.2940   -0.5496   -0.0457 C   0  0  0  0  0  0  0  0  0  0  0  0
 fn get_atom_from(s: &str) -> IResult<&str, Atom> {
-    let read_coord = map_res(take_s(10), |x| x.trim().parse::<f64>());
-    let read_symbol = map(take_s(3), |x| x.trim());
+    let mut read_coord = map_res(take_s(10), |x| x.trim().parse::<f64>());
+    let mut read_symbol = map(take_s(3), |x| x.trim());
     do_parse!(
         s,
         x: read_coord  >> // x coords
@@ -86,21 +78,10 @@ fn test_sdf_atom() {
 }
 // atoms:1 ends here
 
-// bonds
-// bond type mapping:
-// : 1: "Single",
-// : 2: "Double",
-// : 3: "Triple",
-// : 4: "Aromatic",
-// : 5: "Single_or_Double",
-// : 6: "Single_or_Aromatic",
-// : 7: "Double_or_Aromatic",
-// : 8: "Any"
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bonds][bonds:1]]
+// [[file:../../gchemol-readwrite.note::*bonds][bonds:1]]
 //   1  4  1  0  0  0  0
 fn get_bond_from(s: &str) -> IResult<&str, (usize, usize, Bond)> {
-    let read_number = map_res(take_s(3), |x| x.trim().parse::<usize>());
+    let mut read_number = map_res(take_s(3), |x| x.trim().parse::<usize>());
     do_parse!(
         s,
         i: read_number >> // atom i
@@ -141,12 +122,10 @@ fn test_sdf_bond() {
 }
 // bonds:1 ends here
 
-// molecule
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
+// [[file:../../gchemol-readwrite.note::*molecule][molecule:1]]
 pub fn get_molecule_from(input: &str) -> IResult<&str, Molecule> {
-    let read_atoms = many1(get_atom_from);
-    let read_bonds = many0(get_bond_from);
+    let mut read_atoms = many1(get_atom_from);
+    let mut read_bonds = many0(get_bond_from);
     let (input, mol) = do_parse!(
         input,
         title   : read_line     >> // molecule title
@@ -213,9 +192,7 @@ fn format_molecule(mol: &Molecule) -> String {
 }
 // molecule:1 ends here
 
-// chemfile
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
+// [[file:../../gchemol-readwrite.note::*chemfile][chemfile:1]]
 #[derive(Clone, Copy, Debug)]
 pub struct SdfFile();
 
@@ -244,9 +221,7 @@ impl ParseMolecule for SdfFile {
 }
 // chemfile:1 ends here
 
-// new
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::*new][new:1]]
 impl ReadPart for SdfFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Terminated(|line: &str| line == "$$$$\n").read_next(context)

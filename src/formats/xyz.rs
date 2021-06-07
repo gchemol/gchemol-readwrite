@@ -1,14 +1,14 @@
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::parser::*;
 use super::*;
 // imports:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atoms][atoms:1]]
+// [[file:../../gchemol-readwrite.note::*atoms][atoms:1]]
 type Point3 = [f64; 3];
 
 // C -10.0949 -0.5455  0.0000
 fn read_atom_xyz(s: &str) -> IResult<&str, (&str, Point3)> {
-    let element = alt((digit1, alpha1));
+    let mut element = alt((digit1, alpha1));
     do_parse!(
         s,
         space0 >> s: element >> space1 >> p: xyz_array >>
@@ -50,7 +50,7 @@ C -11.4286 -1.3155  0.0000
 }
 // atoms:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*xyz/pxyz][xyz/pxyz:1]]
+// [[file:../../gchemol-readwrite.note::*xyz/pxyz][xyz/pxyz:1]]
 // return molecule title and atoms
 fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3)>)> {
     do_parse!(
@@ -90,7 +90,7 @@ H -13.7062  1.5395  0.0000";
 }
 // xyz/pxyz:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
+// [[file:../../gchemol-readwrite.note::*molecule][molecule:1]]
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
     let mol = if plain {
@@ -140,7 +140,7 @@ fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
 }
 // molecule:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*xyz][xyz:1]]
+// [[file:../../gchemol-readwrite.note::*xyz][xyz:1]]
 /// Classical XYZ format
 #[derive(Copy, Clone, Debug)]
 pub(super) struct XyzFile();
@@ -194,7 +194,7 @@ impl ParseMolecule for XyzFile {
 }
 // xyz:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*plain xyz][plain xyz:1]]
+// [[file:../../gchemol-readwrite.note::*plain xyz][plain xyz:1]]
 /// Plain xyz coordinates with atom symbols (no atom count line and title line)
 #[derive(Debug, Clone, Copy)]
 pub(super) struct PlainXyzFile();
@@ -241,7 +241,7 @@ impl ChemicalFile for PlainXyzFile {
 }
 // plain xyz:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
+// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
 impl ReadPart for XyzFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         let n = context.number_of_lines();

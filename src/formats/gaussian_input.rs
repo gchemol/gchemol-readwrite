@@ -49,9 +49,9 @@ fn blank_line(s: &str) -> IResult<&str, ()> {
 }
 
 fn route_section(s: &str) -> IResult<&str, String> {
-    let pound = tag("#");
-    let print_level = opt(alt((tag_no_case("N"), tag_no_case("P"), tag_no_case("T"))));
-    let keywords = many_till(read_until_eol, blank_line);
+    let mut pound = tag("#");
+    let mut print_level = opt(alt((tag_no_case("N"), tag_no_case("P"), tag_no_case("T"))));
+    let mut keywords = many_till(read_until_eol, blank_line);
     do_parse!(
         s,
         pound >> print_level >>      // #P, #N, #T, #
@@ -79,7 +79,7 @@ B3LYP/6-31+G** test geom=connect
 
 // [[file:../../gchemol-readwrite.note::*title section][title section:1]]
 fn title_section(s: &str) -> IResult<&str, String> {
-    let title_lines = many_till(read_until_eol, blank_line);
+    let mut title_lines = many_till(read_until_eol, blank_line);
     do_parse!(
         s,
         lines: title_lines >> // xx
@@ -94,7 +94,7 @@ fn title_section(s: &str) -> IResult<&str, String> {
 // Specifies the net electric charge (a signed integer) and the spin
 // multiplicity (usually a positive integer)
 fn read_charge_and_spin_list(s: &str) -> IResult<&str, Vec<isize>> {
-    let values = separated_nonempty_list(space1, signed_digit);
+    let mut values = separated_list1(space1, signed_digit);
     do_parse!(s, space0 >> v: values >> eol >> (v))
 }
 
@@ -126,7 +126,7 @@ fn test_gjf_atom_param() {
 // multiple property entries
 // (fragment=1,iso=13,spin=3)
 fn atom_params(s: &str) -> IResult<&str, Vec<(&str, &str)>> {
-    let params = separated_nonempty_list(tag(","), atom_param);
+    let params = separated_list1(tag(","), atom_param);
     delimited(tag("("), params, tag(")"))(s)
 }
 
@@ -212,10 +212,10 @@ fn frozen_code(s: &str) -> IResult<&str, isize> {
 
 // How about this: C-CA--0.25(fragment=1,iso=13,spin=3) 0 0.0 1.2 3.4 H H-H_
 fn atom_line(s: &str) -> IResult<&str, GaussianAtom> {
-    let mm_info = opt(atom_mm_info);
-    let params = opt(atom_params);
-    let oniom_info = opt(atom_oniom_params);
-    let frozen = opt(frozen_code);
+    let mut mm_info = opt(atom_mm_info);
+    let mut params = opt(atom_params);
+    let mut oniom_info = opt(atom_oniom_params);
+    let mut frozen = opt(frozen_code);
     do_parse!(
         s,
         space0 >> e: alphanumeric1      >> // element label
@@ -299,7 +299,7 @@ fn bond_item(s: &str) -> IResult<&str, (usize, f64)> {
 }
 
 fn read_connect_line(s: &str) -> IResult<&str, Vec<(usize, usize, Bond)>> {
-    let read_bond_items = many0(bond_item);
+    let mut read_bond_items = many0(bond_item);
     do_parse!(
         s,
         space0 >> n: unsigned_digit    >> // host atom number
@@ -324,7 +324,7 @@ fn test_gjf_connectivity() {
 
 // [[file:../../gchemol-readwrite.note::*parse][parse:1]]
 fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
-    let link0 = opt(link0_section);
+    let mut link0 = opt(link0_section);
     do_parse!(
         s,
         link0 >>             // Link0 commands, which is optional section
@@ -335,8 +335,8 @@ fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
 }
 
 fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
-    let read_atoms = many1(atom_line);
-    let read_bonds = opt(many1(read_connect_line));
+    let mut read_atoms = many1(atom_line);
+    let mut read_bonds = opt(many1(read_connect_line));
     do_parse!(
         s,
         read_charge_and_spin_list >> // charge and spin multipy

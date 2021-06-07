@@ -1,4 +1,4 @@
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
+// [[file:../../gchemol-readwrite.note::*header][header:1]]
 // parses the following record types in a PDB file:
 //
 // CRYST1
@@ -8,18 +8,18 @@
 // CONECT
 // header:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::*;
 use super::parser::*;
 // imports:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*crystal][crystal:1]]
+// [[file:../../gchemol-readwrite.note::*crystal][crystal:1]]
 fn read_lattice(s: &str) -> IResult<&str, Lattice> {
-    let cryst1 = tag("CRYST1");
-    let read_length = map_res(take_s(9), |x| x.trim().parse::<f64>());
-    let read_angle = map_res(take_s(7), |x| x.trim().parse::<f64>());
-    let take1 = take_s(1);
-    let take11 = take_s(11);
+    let mut cryst1 = tag("CRYST1");
+    let mut read_length = map_res(take_s(9), |x| x.trim().parse::<f64>());
+    let mut read_angle = map_res(take_s(7), |x| x.trim().parse::<f64>());
+    let mut take1 = take_s(1);
+    let mut take11 = take_s(11);
     do_parse!(
         s,
         cryst1 >> // CRYST1
@@ -61,7 +61,7 @@ ATOM      3 T1   MOL     2      -5.234   6.009   1.536  1.00  0.00          Si1+
 }
 // crystal:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*element][element:1]]
+// [[file:../../gchemol-readwrite.note::*element][element:1]]
 fn guess_element<'a>(name: &'a str, r: &'a str) -> Option<&'a str> {
     // 1. return element symbol without whitespace
     if let Some(sym) = r.get(22..24).and_then(|s| Some(s.trim())) {
@@ -101,15 +101,15 @@ fn test_guess_element() {
 }
 // element:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*atom records][atom records:1]]
+// [[file:../../gchemol-readwrite.note::*atom records][atom records:1]]
 // Return Atom index (sn) and Atom object
 fn read_atom_record(s: &str) -> IResult<&str, (usize, Atom)> {
-    let tag_atom = alt((tag("ATOM  "), tag("HETATM")));
-    let take1 = take_s(1);
-    let take3 = take_s(3);
-    let take4 = take_s(4);
-    let read_coord = map_res(take_s(8), |x| x.trim().parse::<f64>());
-    let read_sn = map_res(take_s(5), |x| x.trim().parse::<usize>());
+    let mut tag_atom = alt((tag("ATOM  "), tag("HETATM")));
+    let mut take1 = take_s(1);
+    let mut take3 = take_s(3);
+    let mut take4 = take_s(4);
+    let mut read_coord = map_res(take_s(8), |x| x.trim().parse::<f64>());
+    let mut read_sn = map_res(take_s(5), |x| x.trim().parse::<usize>());
     do_parse!(
         s,
         tag_atom >> // 1-6
@@ -184,7 +184,7 @@ fn test_pdb_atom() {
 }
 
 fn read_atoms(s: &str) -> IResult<&str, Vec<(usize, Atom)>> {
-    let read_atom_list = many0(read_atom_record);
+    let mut read_atom_list = many0(read_atom_record);
     do_parse!(s, atoms: read_atom_list >> (atoms))
 }
 
@@ -199,12 +199,12 @@ HETATM 1641  C8  MID E   5      -2.096   3.018  29.071  1.00 30.82           C\n
 }
 // atom records:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*bond records][bond records:1]]
+// [[file:../../gchemol-readwrite.note::*bond records][bond records:1]]
 fn read_bond_record(s: &str) -> IResult<&str, Vec<(usize, usize)>> {
-    let tag_conect = tag("CONECT");
-    let atom_sn = map_res(take_s(5), |x| x.trim().parse::<usize>());
-    let atom_sn2 = map_res(take_s(5), |x| x.trim().parse::<usize>());
-    let bonded_atoms = many1(atom_sn2);
+    let mut tag_conect = tag("CONECT");
+    let mut atom_sn = map_res(take_s(5), |x| x.trim().parse::<usize>());
+    let mut atom_sn2 = map_res(take_s(5), |x| x.trim().parse::<usize>());
+    let mut bonded_atoms = many1(atom_sn2);
     do_parse!(
         s,
         tag_conect >>                    // CONECT
@@ -262,7 +262,7 @@ fn test_pdb_read_bond() {
 }
 
 fn read_bonds(s: &str) -> IResult<&str, Vec<(usize, usize)>> {
-    let bond_list = many1(read_bond_record);
+    let mut bond_list = many1(read_bond_record);
     do_parse!(
         s,
         bonds: bond_list >> (bonds.into_iter().flat_map(|x| x).collect())
@@ -287,7 +287,7 @@ CONECT 2043 2042 2044
 }
 // bond records:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse][parse:1]]
+// [[file:../../gchemol-readwrite.note::*parse][parse:1]]
 // quick jump to starting position
 fn jump1(s: &str) -> IResult<&str, ()> {
     let possible_tags = alt((tag("CRYST1"), tag("ATOM  "), tag("HETATM")));
@@ -297,10 +297,10 @@ fn jump1(s: &str) -> IResult<&str, ()> {
 }
 
 fn read_molecule(s: &str) -> IResult<&str, Molecule> {
-    let read_lattice = opt(read_lattice);
-    let read_bonds = opt(read_bonds);
+    let mut read_lattice = opt(read_lattice);
+    let mut read_bonds = opt(read_bonds);
     // recognize optional record between Atom and Bond
-    let sep_atoms_bonds = opt(alt((preceded(tag("TER"), read_line), tag("END\n"))));
+    let mut sep_atoms_bonds = opt(alt((preceded(tag("TER"), read_line), tag("END\n"))));
     do_parse!(
         s,
         jump1 >>             // seeking
@@ -398,7 +398,7 @@ END\n
 }
 // parse:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format][format:1]]
+// [[file:../../gchemol-readwrite.note::*format][format:1]]
 fn format_molecule(mol: &Molecule) -> String {
     if mol.natoms() > 9999 {
         eprintln!("PDB format is incapable for large molecule (natoms < 9999)");
@@ -422,7 +422,7 @@ fn format_molecule(mol: &Molecule) -> String {
 }
 // format:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
+// [[file:../../gchemol-readwrite.note::*chemfile][chemfile:1]]
 #[derive(Clone, Copy, Debug)]
 pub struct PdbFile();
 
@@ -448,7 +448,7 @@ impl ParseMolecule for PdbFile {
 }
 // chemfile:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::*new][new:1]]
 impl ReadPart for PdbFile {
     // for multi-model records
     fn read_next(&self, context: ReadContext) -> ReadAction {

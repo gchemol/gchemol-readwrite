@@ -1,4 +1,4 @@
-# [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*cargo][cargo:1]]
+# [[file:gchemol-readwrite.note::*cargo][cargo:1]]
 [package]
 name = "gchemol-readwrite"
 version = "0.0.42"
@@ -12,15 +12,14 @@ exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 
 [dependencies]
 tempfile = "3"
-nom = "5"
 serde = {version="1", features = ["derive"]}
 serde_json = "1"
 indexmap = "1"
-handlebars = "3"
+handlebars = "4"
 tera = "1"
 gut = { version="0.1.3", package="gchemol-gut" }
 gchemol-core = { version=">=0.0.42, <=0.1.0", features=["adhoc"] }
-gchemol-parser = { version="0.2.1" }
+gchemol-parser = { version="0.3.0" }
 
 [dev-dependencies]
 

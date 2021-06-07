@@ -17,7 +17,7 @@ use super::parser::*;
 fn double_cif(s: &str) -> IResult<&str, f64> {
     use nom::number::complete::recognize_float;
 
-    let xx = opt(delimited(tag("("), digit1, tag(")")));
+    let mut xx = opt(delimited(tag("("), digit1, tag(")")));
     do_parse!(
         s,
         v: recognize_float >> // xx
@@ -52,8 +52,8 @@ fn cell_params_xx(s: &str) -> IResult<&str, (&str, f64)> {
 }
 
 fn read_cell_params(s: &str) -> IResult<&str, Vec<(&str, f64)>> {
-    let jump = take_until("_cell_");
-    let read_params = many1(cell_params_xx);
+    let mut jump = take_until("_cell_");
+    let mut read_params = many1(cell_params_xx);
     do_parse!(s, jump >> params: read_params >> (params))
 }
 
@@ -95,7 +95,7 @@ _cell_angle_gamma                 90.0000
 
 // [[file:../../gchemol-readwrite.note::*atoms][atoms:1]]
 fn atom_site_column_name(s: &str) -> IResult<&str, &str> {
-    let col_name = preceded(tag("_atom_site_"), not_space);
+    let mut col_name = preceded(tag("_atom_site_"), not_space);
     do_parse!(s, space0 >> x: col_name >> eol >> (x))
 }
 
@@ -127,7 +127,7 @@ _atom_site_occupancy
 }
 
 fn atom_site_row(s: &str) -> IResult<&str, Vec<&str>> {
-    let read_items = separated_nonempty_list(space1, not_space);
+    let mut read_items = separated_list1(space1, not_space);
     do_parse!(s, space0 >> items: read_items >> eol >> (items))
 }
 

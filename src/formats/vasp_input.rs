@@ -1,13 +1,13 @@
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*header][header:1]]
+// [[file:../../gchemol-readwrite.note::*header][header:1]]
 
 // header:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::parser::*;
 use super::*;
 // imports:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*cell][cell:1]]
+// [[file:../../gchemol-readwrite.note::*cell][cell:1]]
 fn poscar_cell_vectors(s: &str) -> IResult<&str, [[f64; 3]; 3]> {
     do_parse!(
         s,
@@ -30,10 +30,10 @@ fn test_poscar_cell_vectors() {
 }
 // cell:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*elements][elements:1]]
+// [[file:../../gchemol-readwrite.note::*elements][elements:1]]
 fn poscar_ion_types(s: &str) -> IResult<&str, (Vec<&str>, Vec<usize>)> {
-    let elements = separated_list(space1, alpha1);
-    let natoms = separated_list(space1, unsigned_digit);
+    let mut elements = separated_list0(space1, alpha1);
+    let mut natoms = separated_list0(space1, unsigned_digit);
     do_parse!(
         s,
         space0 >> e: elements       >> eol >> // element list
@@ -51,7 +51,7 @@ fn test_formats_vasp_poscar_ion_types() {
 }
 // elements:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*coordinates][coordinates:1]]
+// [[file:../../gchemol-readwrite.note::*coordinates][coordinates:1]]
 // Selective dynamics -- optional, can be omitted
 // only the first character is relevant
 fn selective_dynamics(s: &str) -> IResult<&str, &str> {
@@ -79,13 +79,13 @@ fn test_poscar_select_dynamics() {
 // Direct/Cartesian -- lattice coordinates type
 // only the first character is relevant
 fn direct_or_catersian(s: &str) -> IResult<&str, &str> {
-    let coords_type = alt((tag_no_case("D"), tag_no_case("C")));
+    let mut coords_type = alt((tag_no_case("D"), tag_no_case("C")));
     do_parse!(s, d: coords_type >> read_line >> (d))
 }
 
 // combine two parsers
 fn poscar_select_direct(s: &str) -> IResult<&str, (bool, bool)> {
-    let selective_line = opt(selective_dynamics);
+    let mut selective_line = opt(selective_dynamics);
     let direct_line = direct_or_catersian;
     do_parse!(
         s,
@@ -118,7 +118,7 @@ Direct\n";
 // 0.05185     0.39121     0.29921  T T T # O
 // 0.81339     0.57337     0.68777  T T T # O
 fn poscar_position(s: &str) -> IResult<&str, ([f64; 3], Option<[bool; 3]>)> {
-    let frozen_flags = opt(selective_dynamics_flags);
+    let mut frozen_flags = opt(selective_dynamics_flags);
     do_parse!(
         s,
         space0 >> p: xyz_array >> space0 >> // Coordinates
@@ -142,10 +142,10 @@ fn test_poscar_position() {
 }
 // coordinates:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse molecule][parse molecule:1]]
+// [[file:../../gchemol-readwrite.note::*parse molecule][parse molecule:1]]
 /// Read Molecule from stream in VASP/POSCAR format
 pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
-    let read_ion_positions = many1(poscar_position);
+    let mut read_ion_positions = many1(poscar_position);
     do_parse!(
         s,
         title            : read_until_eol        >> // system title
@@ -230,7 +230,7 @@ Direct
 }
 // parse molecule:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*format molecule][format molecule:1]]
+// [[file:../../gchemol-readwrite.note::*format molecule][format molecule:1]]
 fn format_molecule(mol: &Molecule) -> String {
     let mut lines = String::new();
     let title = mol.title();
@@ -327,7 +327,7 @@ fn test_poscar_symbols_counts() {
 }
 // format molecule:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemfile][chemfile:1]]
+// [[file:../../gchemol-readwrite.note::*chemfile][chemfile:1]]
 #[derive(Clone, Copy, Debug)]
 pub struct PoscarFile();
 
@@ -392,7 +392,7 @@ fn test_vasp_input_parsable() {
 }
 // chemfile:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*impl partition][impl partition:1]]
+// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
 // read all available stream at once
 impl ReadPart for PoscarFile {}
 // impl partition:1 ends here
