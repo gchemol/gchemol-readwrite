@@ -165,8 +165,8 @@ fn parse_atoms(s: &str) -> Result<Vec<Atom>> {
     let ifz = *table.get(&"fract_z").expect("missing fract z col");
     // column index to atom label
     let ilbl = *table.get(&"label").expect("missing atom label col");
-    // TODO: column index to element symbol, which is optional
-    let isym = *table.get(&"type_symbol").expect("atom symbol col");
+    // column index to element symbol, which is optional
+    let isym_opt = table.get(&"type_symbol");
 
     let (_, rows) = read_atom_site_rows(r).map_err(|e| format_err!("{}", e))?;
     let mut atoms = vec![];
@@ -183,8 +183,13 @@ fn parse_atoms(s: &str) -> Result<Vec<Atom>> {
         let (_, fx) = double_cif(sfx).expect("invalid fcoords x");
         let (_, fy) = double_cif(sfy).expect("invalid fcoords y");
         let (_, fz) = double_cif(sfz).expect("invalid fcoords z");
-        // parse atom symbol
-        let sym = row[isym];
+        // parse atom symbol from type_symbol column or atom label column
+        let sym: String = if let Some(&isym) = isym_opt {
+            row[isym].to_string()
+        } else {
+            // take only element symbol
+            row[ilbl].chars().take_while(|x| x.is_ascii_alphabetic()).collect()
+        };
         let mut atom: Atom = (sym, [fx, fy, fz]).into();
         //assign atom label
         atom.set_label(row[ilbl]);
