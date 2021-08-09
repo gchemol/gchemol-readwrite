@@ -109,9 +109,9 @@ struct MoleculeData {
     atoms: Vec<AtomData>,
     bonds: Vec<BondData>,
 
-    // mapping element type:
-    // O C H
-    // 1 2 3
+    // mapping element type and numbers as in VASP POSCAR
+    // O C H  # element symbol
+    // 1 2 3  # element count
     element_types: Vec<(String, usize)>,
     species: Vec<SpeciesData>,
 }
@@ -162,7 +162,7 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
             x + 1
         };
 
-        let [vx, vy, vz] = a.momentum();
+        let [vx, vy, vz] = a.velocity();
         let freezing = a.freezing();
         atoms.push(AtomData {
             index,

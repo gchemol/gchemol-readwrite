@@ -167,7 +167,7 @@ impl ChemicalFile for XyzFile {
         // coordinates
         for (_, a) in mol.atoms() {
             let p = a.position();
-            let v = a.momentum();
+            let v = a.velocity();
             let sym = a.symbol();
             writeln!(
                 &mut lines,
