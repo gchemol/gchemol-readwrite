@@ -274,10 +274,16 @@ fn format_molecule(mol: &Molecule) -> String {
         lines.push_str(&line);
     }
 
+    // velocity data
+    lines.push_str("\n\n");
+    for (_, a) in mol.atoms() {
+        let [vx, vy, vz] = a.velocity();
+        let line = format!("{:18.12} {:18.12} {:18.12}\n", vx, vy, vz);
+        lines.push_str(&line);
+    }
+
     // final blank line
     lines.push_str("\n");
-   
-    // TODO: write velocities
 
     lines
 }
