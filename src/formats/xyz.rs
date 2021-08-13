@@ -164,16 +164,24 @@ impl ChemicalFile for XyzFile {
         }
         writeln!(&mut lines, "{}", mol.title())?;
 
-        // coordinates
+        // only write velocities when they are meaningful
+        let write_velocity = !mol.atoms().all(|(_, a)| {
+            let [vx, vy, vz] = a.velocity();
+            vx == 0.0 && vy == 0.0 && vz == 0.0
+        });
         for (_, a) in mol.atoms() {
             let p = a.position();
             let v = a.velocity();
             let sym = a.symbol();
-            writeln!(
-                &mut lines,
-                "{:6} {:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}",
-                sym, p[0], p[1], p[2], v[0], v[1], v[2]
-            )?;
+            if write_velocity {
+                writeln!(
+                    &mut lines,
+                    "{:6} {:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}{:-18.6}",
+                    sym, p[0], p[1], p[2], v[0], v[1], v[2]
+                )?;
+            } else {
+                writeln!(&mut lines, "{:6} {:-18.6}{:-18.6}{:-18.6}", sym, p[0], p[1], p[2])?;
+            }
         }
 
         // write lattice transition vectors using TV symbol.
