@@ -3,28 +3,28 @@ use super::parser::*;
 use super::*;
 // imports:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*atoms][atoms:1]]
+// [[file:../../gchemol-readwrite.note::bdc38ed5][bdc38ed5]]
 type Point3 = [f64; 3];
 
 // C -10.0949 -0.5455  0.0000
-fn read_atom_xyz(s: &str) -> IResult<&str, (&str, Point3)> {
+fn read_atom_xyz(s: &str) -> IResult<&str, (&str, Point3, &str)> {
     let mut element = alt((digit1, alpha1));
     do_parse!(
         s,
         space0 >> s: element >> space1 >> p: xyz_array >>
-        read_line >>              // ignore the remaing
-        ((s, p))
+        remained: read_line >>              // ignore the remaing
+        ((s, p, remained))
     )
 }
 
 #[test]
 fn test_xyz_read_atom() {
     let line = "C -11.4286 -1.3155  0.0000\n";
-    let (_, (symbol, _)) = read_atom_xyz(line).expect("xyz atom");
+    let (_, (symbol, _, _)) = read_atom_xyz(line).expect("xyz atom");
     assert_eq!("C", symbol);
 
     let line = "6 -11.4286 -1.3155  0.0000 0.0 0.0 0.0\n";
-    let (_, (symbol, position)) = read_atom_xyz(line).expect("xyz atom velocity");
+    let (_, (symbol, position, _)) = read_atom_xyz(line).expect("xyz atom velocity");
     assert_eq!("6", symbol);
     assert_eq!(0.0, position[2]);
 }
@@ -34,7 +34,7 @@ fn test_xyz_read_atom() {
 /// C -11.4286  1.7645  0.0000
 /// C -10.0949  0.9945  0.0000
 /// C -10.0949 -0.5455  0.0000
-fn read_atoms_pxyz(s: &str) -> IResult<&str, Vec<(&str, Point3)>> {
+fn read_atoms_pxyz(s: &str) -> IResult<&str, Vec<(&str, Point3, &str)>> {
     many1(read_atom_xyz)(s)
 }
 
@@ -48,11 +48,11 @@ C -11.4286 -1.3155  0.0000
     let (_, atoms) = read_atoms_pxyz(txt).expect("read_atoms");
     assert_eq!(4, atoms.len());
 }
-// atoms:1 ends here
+// bdc38ed5 ends here
 
-// [[file:../../gchemol-readwrite.note::*xyz/pxyz][xyz/pxyz:1]]
+// [[file:../../gchemol-readwrite.note::f20b5155][f20b5155]]
 // return molecule title and atoms
-fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3)>)> {
+fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3, &str)>)> {
     do_parse!(
         s,
         n: read_usize >>          // the number of atoms
@@ -88,19 +88,19 @@ H -13.7062  1.5395  0.0000";
     let (_, (_, atoms)) = read_atoms_xyz(txt).expect("xyz atoms");
     assert_eq!(12, atoms.len());
 }
-// xyz/pxyz:1 ends here
+// f20b5155 ends here
 
-// [[file:../../gchemol-readwrite.note::*molecule][molecule:1]]
+// [[file:../../gchemol-readwrite.note::ed71e42e][ed71e42e]]
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
     let mol = if plain {
-        let (_, atoms) =
-            read_atoms_pxyz(input).map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
+        let (_, atoms) = read_atoms_pxyz(input)
+            .map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
 
         build_mol(atoms)
     } else {
-        let (_, (title, atoms)) =
-            read_atoms_xyz(input).map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
+        let (_, (title, atoms)) = read_atoms_xyz(input)
+            .map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
 
         let mut mol = build_mol(atoms);
         mol.set_title(&title);
@@ -110,12 +110,27 @@ fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     Ok(mol)
 }
 
+fn parse_velocities(line: &str) -> Option<[f64; 3]> {
+    use std::convert::TryInto;
+
+    let vxyz: Option<Vec<f64>> = line.split_whitespace().map(|x| x.parse().ok()).collect();
+    vxyz?.try_into().ok()
+}
+
 /// Handle dummy TV atoms (transitional vector, traditionally used in
 /// Gaussian/MOPAC package for periodic system)
-fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
+fn build_mol(atoms: Vec<(&str, [f64; 3], &str)>) -> Molecule {
     let mut lat_vectors = vec![];
-    let atoms = atoms.into_iter().filter_map(|x| {
-        let a: Atom = x.into();
+    let atoms = atoms.into_iter().filter_map(|(sym, positions, other)| {
+        let mut a: Atom = (sym, positions).into();
+        // HACK: parse velocities
+        if !other.trim().is_empty() {
+            if let Some(xyz) = parse_velocities(other) {
+                a.set_velocity(xyz);
+            } else {
+                debug!("ignored invalid fields: {other}");
+            }
+        }
         match a.kind() {
             AtomKind::Dummy(x) => {
                 if x == "TV" {
@@ -138,7 +153,7 @@ fn build_mol(atoms: Vec<(&str, [f64; 3])>) -> Molecule {
     }
     mol
 }
-// molecule:1 ends here
+// ed71e42e ends here
 
 // [[file:../../gchemol-readwrite.note::*xyz][xyz:1]]
 /// Classical XYZ format

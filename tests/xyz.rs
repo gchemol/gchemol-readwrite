@@ -1,6 +1,4 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use gchemol_core::Molecule;
 use gchemol_readwrite::prelude::*;
 use gchemol_readwrite::read_all;
@@ -8,9 +6,7 @@ use gchemol_readwrite::read_all;
 use gut::prelude::*;
 // imports:1 ends here
 
-// tests
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*tests][tests:1]]
+// [[file:../gchemol-readwrite.note::b3446f93][b3446f93]]
 #[test]
 fn test_formats_xyz() -> Result<()> {
     // FIXME: remove
@@ -51,6 +47,13 @@ fn test_formats_xyz() -> Result<()> {
     assert_eq!(mols.len(), 5);
     assert_eq!(mols[0].natoms(), 13);
 
+    // velocities
+    let f = "./tests/files/xyz/HCN.xyz";
+    let mol = Molecule::from_file(f)?;
+    let velocities: Vec<_> = mol.velocities().collect();
+    assert_eq!(velocities.len(), 3);
+    assert_eq!(velocities[0][0], 0.5048153271412877);
+
     Ok(())
 }
-// tests:1 ends here
+// b3446f93 ends here
