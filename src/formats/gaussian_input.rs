@@ -453,17 +453,13 @@ Required
 }
 // parse:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*format][format:1]]
+// [[file:../../gchemol-readwrite.note::5605d45c][5605d45c]]
 // TODO: atom properties
 fn format_atom(a: &Atom) -> String {
     let [x, y, z] = a.position();
-    format!(
-        " {symbol:15} {x:14.8} {y:14.8} {z:14.8}\n",
-        symbol = a.symbol(),
-        x = x,
-        y = y,
-        z = z,
-    )
+    let symbol = a.symbol();
+    let fcode = if a.freezing() == [true; 3] { -1 } else { 0 };
+    format!(" {symbol:15} {fcode:2} {x:14.8} {y:14.8} {z:14.8}\n",)
 }
 
 // string representation in gaussian input file format
@@ -492,7 +488,10 @@ fn format_molecule(mol: &Molecule) -> String {
         // let vb = lattice.vector_b();
         // let vc = lattice.vector_c();
         for l in lattice.vectors().iter() {
-            lines.push_str(&format!(" TV              {:14.8}{:14.8}{:14.8}\n", l.x, l.y, l.z));
+            lines.push_str(&format!(
+                " TV              {:14.8}{:14.8}{:14.8}\n",
+                l.x, l.y, l.z
+            ));
         }
     }
 
@@ -516,7 +515,7 @@ fn format_molecule(mol: &Molecule) -> String {
     lines.push_str("\n");
     lines
 }
-// format:1 ends here
+// 5605d45c ends here
 
 // [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
 #[derive(Clone, Copy, Debug)]
