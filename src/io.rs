@@ -1,15 +1,11 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use gut::fs::*;
 use gut::prelude::*;
 
 use gchemol_core::Molecule;
 // imports:1 ends here
 
-// traits
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*traits][traits:1]]
+// [[file:../gchemol-readwrite.note::*traits][traits:1]]
 pub trait FromFile: Sized {
     /// Return content of text file in string.
     ///
@@ -40,9 +36,7 @@ pub trait StringIO {
 }
 // traits:1 ends here
 
-// file
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*file][file:1]]
+// [[file:../gchemol-readwrite.note::*file][file:1]]
 impl FromFile for String {
     fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         gut::fs::read_file(path)
@@ -56,9 +50,7 @@ impl ToFile for str {
 }
 // file:1 ends here
 
-// molecule
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*molecule][molecule:1]]
+// [[file:../gchemol-readwrite.note::*molecule][molecule:1]]
 impl FromFile for Molecule {
     /// Construct molecule from external text file
     fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
@@ -77,9 +69,7 @@ impl ToFile for Molecule {
 }
 // molecule:1 ends here
 
-// string
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*string][string:1]]
+// [[file:../gchemol-readwrite.note::*string][string:1]]
 impl StringIO for Molecule {
     /// Format molecule as string in specific molecular file format. Return
     /// error if cannot format molecule in `fmt`.
@@ -97,9 +87,7 @@ impl StringIO for Molecule {
 }
 // string:1 ends here
 
-// functions
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*functions][functions:1]]
+// [[file:../gchemol-readwrite.note::80c178b0][80c178b0]]
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
 pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
@@ -137,4 +125,4 @@ pub fn write_format<'a, P: AsRef<Path>>(
 ) -> Result<()> {
     crate::formats::write_chemical_file(path.as_ref(), mols, Some(fmt))
 }
-// functions:1 ends here
+// 80c178b0 ends here
