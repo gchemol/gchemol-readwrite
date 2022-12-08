@@ -7,7 +7,7 @@ authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Reading/writing chemical objects for gchemol"
 homepage = "https://github.com/gchemol/gchemol-readwrite"
 repository = "https://github.com/gchemol/gchemol-readwrite"
-license = "MIT OR Apache-2.0"
+license = "GPL-3.0"
 exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 
 [dependencies]
