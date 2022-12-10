@@ -11,14 +11,15 @@
 //===============================================================================#
 // 0c98a9cf ends here
 
-// [[file:../gchemol-readwrite.note::*mods][mods:1]]
+// [[file:../gchemol-readwrite.note::7fbdd0af][7fbdd0af]]
 // ignore compiler warnings due to nom macro uses
 #[allow(unused)]
-mod formats;
+pub mod formats;
+
 mod template;
 
 mod io;
-// mods:1 ends here
+// 7fbdd0af ends here
 
 // [[file:../gchemol-readwrite.note::efea89c0][efea89c0]]
 pub mod prelude {

@@ -81,6 +81,13 @@ impl GaussianAtomInfo {
 }
 // d068aeaf ends here
 
+// [[file:../../gchemol-readwrite.note::2d4f6dc2][2d4f6dc2]]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GaussianMoleculeInfo {
+
+}
+// 2d4f6dc2 ends here
+
 // [[file:../../gchemol-readwrite.note::*link0 section][link0 section:1]]
 fn link0_cmd(s: &str) -> IResult<&str, &str> {
     let prefix = tag("%");
@@ -610,8 +617,26 @@ fn format_molecule(mol: &Molecule) -> String {
 
 // [[file:../../gchemol-readwrite.note::d13a6041][d13a6041]]
 #[derive(Clone, Copy, Debug)]
-/// plain xyz coordinates with atom symbols
+/// Gaussian input file
 pub struct GaussianInputFile();
+
+impl GaussianInputFile {
+    /// Return a type for setting extra atom information such as ONIOM
+    /// layer.
+    pub fn extra_atom_info() -> GaussianAtomInfo {
+        GaussianAtomInfo::default()
+    }
+
+    /// Extract extra atom information from `atom`.
+    pub fn extract_extra_atom_info(atom: &Atom) -> Option<GaussianAtomInfo> {
+        GaussianAtomInfo::extract(atom).ok()
+    }
+
+    /// Extract extra molecule information from `mol`.
+    pub fn extract_extra_molecule_info(mol: &Molecule) -> Option<GaussianMoleculeInfo> {
+        todo!();
+    }
+}
 
 /// References
 /// http://gaussian.com/input/?tabid=0
@@ -653,8 +678,15 @@ impl ReadPart for GaussianInputFile {
 fn test_gaussian_input_file() -> Result<()> {
     let s = gut::fs::read_file("tests/files/gaussian/test0769.com")?;
     let mol = GaussianInputFile().parse_molecule(&s)?;
-    let s = format_molecule(&mol);
-    println!("{s}\n****");
+    let mut atoms_high_layer = vec![];
+    for (i, a) in mol.atoms() {
+        let extra = GaussianInputFile::extract_extra_atom_info(&a);
+        match extra.unwrap().get_oniom_layer() {
+            Some("H") => atoms_high_layer.push(i),
+            _ => {}
+        }
+    }
+    assert_eq!(atoms_high_layer.len(), 5);
     Ok(())
 }
 // 457b015d ends here

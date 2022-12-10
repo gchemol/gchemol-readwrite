@@ -139,13 +139,14 @@ where
 }
 // parse iter:1 ends here
 
-// [[file:../gchemol-readwrite.note::*read chemfile][read chemfile:1]]
-use self::cif::CifFile;
-use self::gaussian_input::GaussianInputFile;
-use self::mol2::Mol2File;
-use self::pdb::PdbFile;
-use self::sdf::SdfFile;
-use self::vasp_input::PoscarFile;
+// [[file:../gchemol-readwrite.note::fa51a104][fa51a104]]
+pub use self::cif::CifFile;
+pub use self::gaussian_input::GaussianInputFile;
+pub use self::mol2::Mol2File;
+pub use self::pdb::PdbFile;
+pub use self::sdf::SdfFile;
+pub use self::vasp_input::PoscarFile;
+
 use self::xyz::PlainXyzFile;
 use self::xyz::XyzFile;
 
@@ -218,7 +219,7 @@ impl ChemicalFileParser {
         self.parse_molecules_from(r)
     }
 }
-// read chemfile:1 ends here
+// fa51a104 ends here
 
 // [[file:../gchemol-readwrite.note::*write chemifile][write chemifile:1]]
 /// Write molecules into path in specific chemical file format.
