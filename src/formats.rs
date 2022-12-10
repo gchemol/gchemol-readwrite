@@ -1,6 +1,4 @@
-// mods
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*mods][mods:1]]
+// [[file:../gchemol-readwrite.note::*mods][mods:1]]
 mod cif;
 mod mol2;
 mod pdb;
@@ -11,17 +9,13 @@ mod gaussian_input;
 mod vasp_input;
 // mods:1 ends here
 
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use gut::fs::*;
 
 type FileReader = BufReader<File>;
 // imports:1 ends here
 
-// exports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*exports][exports:1]]
+// [[file:../gchemol-readwrite.note::*exports][exports:1]]
 pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule, Vector3f};
 pub(self) use gut::prelude::*;
 
@@ -32,9 +26,7 @@ pub(self) mod parser {
 }
 // exports:1 ends here
 
-// chemical file
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*chemical file][chemical file:1]]
+// [[file:../gchemol-readwrite.note::*chemical file][chemical file:1]]
 pub(self) trait ChemicalFile: ParseMolecule + ReadPart {
     /// Chemical file type.
     fn ftype(&self) -> &str;
@@ -87,9 +79,7 @@ pub(self) trait ParseMolecule {
 }
 // chemical file:1 ends here
 
-// parse iter
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*parse iter][parse iter:1]]
+// [[file:../gchemol-readwrite.note::*parse iter][parse iter:1]]
 use gchemol_parser::{partition::Partitions, partition::ReadPart, TextReader};
 
 /// Parse many molecules
@@ -149,9 +139,7 @@ where
 }
 // parse iter:1 ends here
 
-// read chemfile
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*read chemfile][read chemfile:1]]
+// [[file:../gchemol-readwrite.note::*read chemfile][read chemfile:1]]
 use self::cif::CifFile;
 use self::gaussian_input::GaussianInputFile;
 use self::mol2::Mol2File;
@@ -232,9 +220,7 @@ impl ChemicalFileParser {
 }
 // read chemfile:1 ends here
 
-// write chemifile
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*write chemifile][write chemifile:1]]
+// [[file:../gchemol-readwrite.note::*write chemifile][write chemifile:1]]
 /// Write molecules into path in specific chemical file format.
 pub(super) fn write_chemical_file<'a>(
     path: &Path,
@@ -264,9 +250,7 @@ pub(super) fn format_as_chemical_file(mol: &Molecule, fmt: &str) -> Result<Strin
 }
 // write chemifile:1 ends here
 
-// backends
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*backends][backends:1]]
+// [[file:../gchemol-readwrite.note::*backends][backends:1]]
 macro_rules! avail_parsers {
     () => {
         vec![

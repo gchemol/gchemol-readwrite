@@ -11,6 +11,76 @@ use super::parser::*;
 // http://gaussian.com/input/?tabid=0
 // header:1 ends here
 
+// [[file:../../gchemol-readwrite.note::d068aeaf][d068aeaf]]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GaussianAtomInfo {
+    element_label: String,
+    mm_type: Option<String>,
+    mm_charge: Option<f64>,
+    frozen_code: Option<isize>,
+    position: [f64; 3],
+    properties: HashMap<String, String>,
+    oniom_info: OniomInfo,
+}
+
+impl Default for GaussianAtomInfo {
+    fn default() -> Self {
+        GaussianAtomInfo {
+            element_label: "C".to_owned(),
+            mm_type: None,
+            mm_charge: None,
+            frozen_code: None,
+            properties: HashMap::new(),
+            position: [0.0; 3],
+            oniom_info: OniomInfo::default(),
+        }
+    }
+}
+
+impl GaussianAtomInfo {
+    /// Set ONIOM layer for atom
+    pub fn set_oniom_layer(&mut self, layer: &str) {
+        self.oniom_info.layer = layer.to_owned().into();
+    }
+
+    /// Get ONIOM layer from atom
+    pub fn get_oniom_layer(&self) -> Option<&str> {
+        self.oniom_info.layer.as_ref().map(|x| x.as_str())
+    }
+
+    /// Set ONIOM link host atom
+    pub fn set_oniom_link_host(&mut self, link_host: usize) {
+        self.oniom_info.link_host = link_host.into();
+    }
+
+    /// Get ONIOM link host atom
+    pub fn get_oniom_link_host(&mut self) -> Option<usize> {
+        self.oniom_info.link_host
+    }
+
+    /// Set ONIOM link atom type
+    pub fn set_oniom_link_atom(&mut self, link_atom: &str) {
+        self.oniom_info.link_atom = link_atom.to_owned().into();
+    }
+
+    /// Get ONIOM link atom type
+    pub fn get_oniom_link_atom(&mut self) -> Option<&str> {
+        self.oniom_info.link_atom.as_ref().map(|x| x.as_str())
+    }
+
+    /// Attach/store extra properties to an `atom`.
+    pub fn attach(&self, atom: &mut Atom) {
+        let _ = atom.properties.store(ATOM_KEY_ONIOM_LAYER, &self);
+    }
+
+    /// Extract extra properties from `atom`.
+    pub fn extract(atom: &Atom) -> Result<Self> {
+        let x = atom.properties.load(ATOM_KEY_ONIOM_LAYER)?;
+        Ok(x)
+    }
+}
+// d068aeaf ends here
+
 // [[file:../../gchemol-readwrite.note::*link0 section][link0 section:1]]
 fn link0_cmd(s: &str) -> IResult<&str, &str> {
     let prefix = tag("%");
@@ -90,7 +160,7 @@ fn title_section(s: &str) -> IResult<&str, String> {
 }
 // title section:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*charge and spin multiplicity][charge and spin multiplicity:1]]
+// [[file:../../gchemol-readwrite.note::766dccd9][766dccd9]]
 // Specifies the net electric charge (a signed integer) and the spin
 // multiplicity (usually a positive integer)
 fn read_charge_and_spin_list(s: &str) -> IResult<&str, Vec<isize>> {
@@ -107,7 +177,7 @@ fn test_charge_and_spin() {
     let (r, x) = read_charge_and_spin_list(line).expect("gjf charge & spin");
     assert_eq!(6, x.len());
 }
-// charge and spin multiplicity:1 ends here
+// 766dccd9 ends here
 
 // [[file:../../gchemol-readwrite.note::*element info][element info:1]]
 // single atom parameter entry
@@ -156,65 +226,82 @@ fn test_gjf_atom_mm_info() {
 }
 // element info:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*oniom info][oniom info:1]]
+// [[file:../../gchemol-readwrite.note::0d3a42da][0d3a42da]]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct OniomInfo {
+    layer: Option<String>,
+    link_atom: Option<String>,
+    link_host: Option<usize>,
+    // TODO: scale factor
+}
+
+impl std::fmt::Display for OniomInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(layer) = &self.layer {
+            write!(f, "{layer}")?;
+            if let Some(link_atom) = &self.link_atom {
+                write!(f, " {link_atom}")?;
+                if let Some(link_host) = &self.link_host {
+                    write!(f, " {link_host}")?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl OniomInfo {
+    fn from_str(s: &str) -> Self {
+        let mut oniom = Self::default();
+        let parts = s.split_whitespace().collect_vec();
+        if parts.is_empty() {
+            return oniom;
+        }
+        oniom.layer = parts[0].to_owned().into();
+        if parts.len() >= 2 {
+            oniom.link_atom = parts[1].to_owned().into();
+            if parts.len() >= 3 {
+                oniom.link_host = parts[2].parse().ok();
+            }
+        }
+        return oniom;
+    }
+}
+
 // C-CA--0.25   0   -4.703834   -1.841116   -0.779093 L
 // C-CA--0.25   0   -3.331033   -1.841116   -0.779093 L H-HA-0.1  3
-fn atom_oniom_params(s: &str) -> IResult<&str, &str> {
+fn atom_oniom_info(s: &str) -> IResult<&str, OniomInfo> {
     do_parse!(
         s,
-        space1 >>
-        layer: alpha1 >> // ONIOM layer: H, M, L
-        (layer)
+        s: read_line >> // ONIOM layer: H, M, L
+        (OniomInfo::from_str(s))
     )
 }
 
 #[test]
 fn test_gjf_atom_oniom_params() {
-    let (_, layer) = atom_oniom_params(" L H-Ha-0.1 3\n").unwrap();
-    assert_eq!("L", layer);
-    let (_, layer) = atom_oniom_params(" L\n").unwrap();
-    assert_eq!("L", layer);
-}
-// oniom info:1 ends here
+    let (_, oniom) = atom_oniom_info(" L H-Ha-0.1 3\n").unwrap();
+    assert_eq!("L", oniom.layer.unwrap());
+    assert_eq!("H-Ha-0.1", oniom.link_atom.unwrap());
+    assert_eq!(Some(3), oniom.link_host);
 
-// [[file:../../gchemol-readwrite.note::*atom line][atom line:1]]
+    let (_, oniom) = atom_oniom_info(" L\n").unwrap();
+    assert_eq!("L", oniom.layer.unwrap());
+}
+// 0d3a42da ends here
+
+// [[file:../../gchemol-readwrite.note::dfcbceb2][dfcbceb2]]
 use std::collections::HashMap;
 use std::iter::FromIterator;
-
-#[derive(Debug)]
-struct GaussianAtom<'a> {
-    element_label: &'a str,
-    mm_type: Option<&'a str>,
-    mm_charge: Option<f64>,
-    frozen_code: Option<isize>,
-    position: [f64; 3],
-    properties: HashMap<&'a str, &'a str>,
-    oniom_layer: Option<&'a str>,
-}
-
-impl<'a> Default for GaussianAtom<'a> {
-    fn default() -> Self {
-        GaussianAtom {
-            element_label: "C",
-            mm_type: None,
-            mm_charge: None,
-            frozen_code: None,
-            properties: HashMap::new(),
-            position: [0.0; 3],
-            oniom_layer: None,
-        }
-    }
-}
 
 fn frozen_code(s: &str) -> IResult<&str, isize> {
     terminated(signed_digit, space1)(s)
 }
 
 // How about this: C-CA--0.25(fragment=1,iso=13,spin=3) 0 0.0 1.2 3.4 H H-H_
-fn atom_line(s: &str) -> IResult<&str, GaussianAtom> {
+fn atom_line(s: &str) -> IResult<&str, GaussianAtomInfo> {
     let mut mm_info = opt(atom_mm_info);
     let mut params = opt(atom_params);
-    let mut oniom_info = opt(atom_oniom_params);
     let mut frozen = opt(frozen_code);
     do_parse!(
         s,
@@ -224,34 +311,33 @@ fn atom_line(s: &str) -> IResult<&str, GaussianAtom> {
         space1                          >> // xx
         f: frozen                       >> // frozen code: 0, -1
         c: xyz_array                    >> // x, y, z coords
-        o: oniom_info                   >> // H H-H_
-        read_line >>                       // ignore remaining part
+        o: atom_oniom_info              >> // H H-H_
         ({
-            GaussianAtom {
-                element_label: e,
-                mm_type: m.and_then(|x| Some(x.0)),
+            GaussianAtomInfo {
+                element_label: e.to_owned(),
+                mm_type: m.and_then(|x| Some(x.0.to_owned())),
                 mm_charge: m.and_then(|x| x.1),
                 frozen_code: f,
                 position: c,
-                properties: if p.is_some() {p.unwrap().into_iter().collect()} else {HashMap::new()},
-                oniom_layer: o,
+                properties: if p.is_some() {p.unwrap().into_iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect()} else {HashMap::new()},
+                oniom_info: o,
                 ..Default::default()
             }
         })
     )
 }
-// atom line:1 ends here
+// dfcbceb2 ends here
 
-// [[file:../../gchemol-readwrite.note::*test][test:1]]
+// [[file:../../gchemol-readwrite.note::58144795][58144795]]
 #[test]
 fn test_gjf_atom_line() {
     let line = "C-CA--0.25(fragment=1,iso=13,spin=3)  -1 0.00   0.00   0.00 L H-HA-0.1  3\n";
     let (_, ga) = atom_line(line).expect("full oniom atom line");
-    assert_eq!(ga.oniom_layer, Some("L"));
+    assert_eq!(ga.oniom_info.layer.unwrap(), "L");
 
     let line = "C-CA--0.25(fragment=1,iso=13,spin=3) -1 0.00   0.00   0.00 L \n";
     let (_, ga) = atom_line(line).expect("oniom without link atom");
-    assert_eq!(ga.oniom_layer, Some("L"));
+    assert_eq!(ga.oniom_info.layer.unwrap(), "L");
     assert_eq!(ga.frozen_code, Some(-1));
 
     let line = "C-CA--0.25(fragment=1,iso=13,spin=3) -1 0.00   0.00   0.00\n";
@@ -261,15 +347,15 @@ fn test_gjf_atom_line() {
     let line = "C-CA--0.25(fragment=1,iso=13,spin=3) 0.00   0.00   0.00\n";
     let (_, ga) = atom_line(line).expect("missing frozen code");
     assert_eq!(ga.mm_charge, Some(-0.25));
-    assert_eq!(ga.mm_type, Some("CA"));
+    assert_eq!(ga.mm_type.unwrap(), "CA");
     assert_eq!(ga.properties["fragment"], "1");
 
     let (_, ga) = atom_line("C-CA--0.25  0.00   0.00   0.00\n").expect("no key-value params");
     assert_eq!(ga.mm_charge, Some(-0.25));
-    assert_eq!(ga.mm_type, Some("CA"));
+    assert_eq!(ga.mm_type.unwrap(), "CA");
 
     let (_, ga) = atom_line("C-C_3 0.00 0.00 0.00\n").expect("no mm charge");
-    assert_eq!(ga.mm_type, Some("C_3"));
+    assert_eq!(ga.mm_type.unwrap(), "C_3");
     assert_eq!(ga.mm_charge, None);
 
     let line = " C12(fragment=1)  0.00   0.00   0.00\n";
@@ -281,7 +367,7 @@ fn test_gjf_atom_line() {
     let (_, ga) = atom_line(line).expect("simple");
     assert_eq!(ga.position[0], 0.0);
 }
-// test:1 ends here
+// 58144795 ends here
 
 // [[file:../../gchemol-readwrite.note::*connectivity specs][connectivity specs:1]]
 // Connectivity specs example:
@@ -322,7 +408,9 @@ fn test_gjf_connectivity() {
 }
 // connectivity specs:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*parse][parse:1]]
+// [[file:../../gchemol-readwrite.note::fc56d173][fc56d173]]
+const ATOM_KEY_ONIOM_LAYER: &'static str = "gaussian-oniom-layer";
+
 fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
     let mut link0 = opt(link0_section);
     do_parse!(
@@ -340,9 +428,9 @@ fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
     do_parse!(
         s,
         read_charge_and_spin_list >> // charge and spin multipy
-        atoms: read_atoms  >>        // atom symbol, coordinates, atom type, ...
-        blank_line         >>
-        bonds: read_bonds  >>        // connectivity section
+        atoms: read_atoms         >> // atom symbol, coordinates, atom type, ...
+        blank_line                >>
+        bonds: read_bonds         >> // connectivity section
         ({
             let mut mol = Molecule::default();
             let mut lat_vectors = vec![];
@@ -350,15 +438,18 @@ fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
                 // Handle dummy TV atoms (transitional vector)
                 if &x.element_label.to_uppercase() == "TV" {
                     debug!("found TV dummy atom");
-                    lat_vectors.push(x.position);
+                    lat_vectors.push(x.position.clone());
                     None
                 } else {
-                    let mut a = Atom::new(x.element_label, x.position);
+                    // set atom freezing flag
+                    let mut a = Atom::new(x.element_label.clone(), x.position.clone());
                     if let Some(f) = x.frozen_code {
                         if f == -1 {
                             a.set_freezing([true; 3]);
                         }
                     }
+                    // store extra atom properties such as ONIOM layer or fragment index.
+                    x.attach(&mut a);
                     Some(a)
                 }
             });
@@ -387,13 +478,8 @@ pub fn parse_molecule(s: &str) -> Result<Molecule> {
     // We replace comma with space in molecular specification part for easy
     // parsing.
     let r = r.replace(",", " ");
-    let (r, mut mol) = parse_molecule_specs(&r).map_err(|e| {
-        format_err!(
-            "parsing gaussian input molecule specification failure: {:}.\n Input stream: {}",
-            e,
-            r
-        )
-    })?;
+    let (r, mut mol) =
+        parse_molecule_specs(&r).map_err(|e| format_err!("parsing gaussian input molecule specification failure: {:}.\n Input stream: {}", e, r))?;
     mol.set_title(&title);
 
     Ok(mol)
@@ -451,7 +537,7 @@ Required
     assert_eq!(17, mol.natoms());
     assert_eq!(16, mol.nbonds());
 }
-// parse:1 ends here
+// fc56d173 ends here
 
 // [[file:../../gchemol-readwrite.note::5605d45c][5605d45c]]
 // TODO: atom properties
@@ -459,7 +545,15 @@ fn format_atom(a: &Atom) -> String {
     let [x, y, z] = a.position();
     let symbol = a.symbol();
     let fcode = if a.freezing() == [true; 3] { -1 } else { 0 };
-    format!(" {symbol:15} {fcode:2} {x:14.8} {y:14.8} {z:14.8}\n",)
+    let part = format!(" {symbol:15} {fcode:2} {x:14.8} {y:14.8} {z:14.8}");
+
+    // format ONIOM layer, link atom, link host
+    if let Ok(extra) = GaussianAtomInfo::extract(&a) {
+        let oniom = extra.oniom_info;
+        format!("{part} {oniom}\n")
+    } else {
+        format!("{part}\n")
+    }
 }
 
 // string representation in gaussian input file format
@@ -488,10 +582,7 @@ fn format_molecule(mol: &Molecule) -> String {
         // let vb = lattice.vector_b();
         // let vc = lattice.vector_c();
         for l in lattice.vectors().iter() {
-            lines.push_str(&format!(
-                " TV              {:14.8}{:14.8}{:14.8}\n",
-                l.x, l.y, l.z
-            ));
+            lines.push_str(&format!(" TV              {:14.8}{:14.8}{:14.8}\n", l.x, l.y, l.z));
         }
     }
 
@@ -517,7 +608,7 @@ fn format_molecule(mol: &Molecule) -> String {
 }
 // 5605d45c ends here
 
-// [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+// [[file:../../gchemol-readwrite.note::d13a6041][d13a6041]]
 #[derive(Clone, Copy, Debug)]
 /// plain xyz coordinates with atom symbols
 pub struct GaussianInputFile();
@@ -543,9 +634,9 @@ impl ParseMolecule for GaussianInputFile {
         parse_molecule(input)
     }
 }
-// impl chemfile:1 ends here
+// d13a6041 ends here
 
-// [[file:../../gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::2530a669][2530a669]]
 impl ReadPart for GaussianInputFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Terminated(|line: &str| {
@@ -555,4 +646,15 @@ impl ReadPart for GaussianInputFile {
         .read_next(context)
     }
 }
-// new:1 ends here
+// 2530a669 ends here
+
+// [[file:../../gchemol-readwrite.note::457b015d][457b015d]]
+#[test]
+fn test_gaussian_input_file() -> Result<()> {
+    let s = gut::fs::read_file("tests/files/gaussian/test0769.com")?;
+    let mol = GaussianInputFile().parse_molecule(&s)?;
+    let s = format_molecule(&mol);
+    println!("{s}\n****");
+    Ok(())
+}
+// 457b015d ends here

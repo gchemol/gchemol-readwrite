@@ -1,14 +1,9 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../../gchemol-readwrite.note::*imports][imports:1]]
 use super::*;
 use super::parser::*;
 // imports:1 ends here
 
-// data type
-// Each data section has data (single or in a array) in different type.
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*data type][data type:1]]
+// [[file:../../gchemol-readwrite.note::*data type][data type:1]]
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -71,10 +66,7 @@ fn test_fchk_data_type() {
 }
 // data type:1 ends here
 
-// data section
-// A data section in formatted checkpoint file.
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*data section][data section:1]]
+// [[file:../../gchemol-readwrite.note::*data section][data section:1]]
 /// Represents a section of data in formatted checkpoint file (fchk)
 #[derive(Debug, Clone)]
 struct Section<'a> {
@@ -132,51 +124,4 @@ fn test_fchk_section_header() {
     let (_, s) = read_section_header(line).expect("fchk section header");
     assert!(!s.is_array);
 }
-
-// // read all members of data array. line endings are ignored using nl! macro
-// fn read_data_array(input: &str, array_size: usize, width: usize) -> nom::IResult<&str, Vec<&str>> {
-//     let (input, array) = many_m_n!(input, array_size, array_size, nl!(take!(width)))?;
-
-//     Ok((input, array))
-// }
-
-// /// Read data for a named section
-// fn read_section<'a>(input: &'a str, label: &'a str) -> IResult<&'a str, Section<'a>> {
-//     // goto section named as `label`
-//     // jump to the line starts with `label`
-//     let t = format!("\n{}", label);
-//     let (input, _) = jump_to(&t)(input)?;
-
-//     // parse section header
-//     let (mut input, mut sect) = read_section_header(input)?;
-//     let width = sect.data_type.width();
-
-//     // parse array data
-//     if sect.is_array {
-//         let array_size: usize = sect.value.trim().parse().expect("xx");
-//         let (input, array) = read_data_array(input, array_size, width)?;
-//         sect.data_array = Some(array);
-//         return Ok((input, sect));
-//     }
-
-//     Ok((input, sect))
-// }
-
-// #[test]
-// fn test_read_section() {
-//     let txt = "Title Card Required
-// SP        RB3LYP                                                      STO-3G
-// Number of atoms                            I               11
-// Charge                                     I                0
-// Multiplicity                               I                1
-// Nuclear charges                            R   N=          11
-//   6.00000000E+00  1.00000000E+00  1.00000000E+00  1.00000000E+00  6.00000000E+00
-//   1.00000000E+00  1.00000000E+00  6.00000000E+00  1.00000000E+00  1.00000000E+00
-//   1.00000000E+00
-// ";
-//     // let x = read_section(txt, "Nuclear charges").expect("fchk section");
-//     let x = read_section(txt, "Charge");
-//     // let x = read_section(txt, "Nuclear charges");
-//     println!("{:#?}", x);
-// }
 // data section:1 ends here
