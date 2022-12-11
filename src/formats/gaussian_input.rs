@@ -12,6 +12,11 @@ use super::parser::*;
 // header:1 ends here
 
 // [[file:../../gchemol-readwrite.note::d068aeaf][d068aeaf]]
+// for reading/setting properties for `Atom` and `Molecule`
+const ATOM_KEY: &'static str = "gaussian-atom-private";
+const MOLE_KEY: &'static str = "gaussian-mole-private";
+
+/// Extra Atom properties pertinent to Gaussian input file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GaussianAtomInfo {
     element_label: String,
@@ -70,25 +75,62 @@ impl GaussianAtomInfo {
 
     /// Attach/store extra properties to an `atom`.
     pub fn attach(&self, atom: &mut Atom) {
-        let _ = atom.properties.store(ATOM_KEY_ONIOM_LAYER, &self);
+        let _ = atom.properties.store(ATOM_KEY, &self);
     }
 
     /// Extract extra properties from `atom`.
     pub fn extract(atom: &Atom) -> Result<Self> {
-        let x = atom.properties.load(ATOM_KEY_ONIOM_LAYER)?;
+        let x = atom.properties.load(ATOM_KEY)?;
         Ok(x)
     }
 }
 // d068aeaf ends here
 
 // [[file:../../gchemol-readwrite.note::2d4f6dc2][2d4f6dc2]]
+/// Extra Molecule properties pertinent to Gaussian input file
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GaussianMoleculeInfo {
+    route: Option<String>,
+    link0: Option<String>,
+    title: Option<String>,
+    charge_and_multiplicity: Option<String>,
+}
 
+impl std::fmt::Display for GaussianMoleculeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let route = self.route.as_deref().unwrap_or("#p sp scf=tight HF/3-21G* geom=connect test").trim();
+        let link0 = self.link0.as_deref().unwrap_or("%nproc=1\n%mem=20MW").trim();
+        let title = self.title.as_deref().unwrap_or("Title Card Required").trim();
+        let csline = self.charge_and_multiplicity.as_deref().unwrap_or("0 1").trim();
+        write!(f, "{link0}\n{route}\n\n{title}\n\n{csline}")
+    }
+}
+
+impl GaussianMoleculeInfo {
+    /// Attach/store extra properties to `Molecule` `mol`.
+    pub fn attach(&self, mol: &mut Molecule) {
+        let _ = mol.properties.store(MOLE_KEY, &self);
+    }
+
+    /// Set route card for Gaussian input.
+    pub fn set_route(&mut self, route: &str) {
+        self.route = route.to_owned().into();
+    }
+
+    /// Set route card for Gaussian input.
+    pub fn set_link0(&mut self, link0: &str) {
+        self.route = link0.to_owned().into();
+    }
+
+    /// Extract extra properties from `Molecule`.
+    pub fn extract(mol: &Molecule) -> Result<Self> {
+        let x = mol.properties.load(MOLE_KEY)?;
+        Ok(x)
+    }
 }
 // 2d4f6dc2 ends here
 
-// [[file:../../gchemol-readwrite.note::*link0 section][link0 section:1]]
+// [[file:../../gchemol-readwrite.note::576b287c][576b287c]]
 fn link0_cmd(s: &str) -> IResult<&str, &str> {
     let prefix = tag("%");
     do_parse!(s, prefix >> cmd: read_until_eol >> (cmd))
@@ -118,7 +160,7 @@ fn test_link0_section() {
     let (_, link0_cmds) = link0_section(lines).expect("gjf link0 section");
     assert_eq!(3, link0_cmds.len());
 }
-// link0 section:1 ends here
+// 576b287c ends here
 
 // [[file:../../gchemol-readwrite.note::*route section][route section:1]]
 fn blank_line(s: &str) -> IResult<&str, ()> {
@@ -416,29 +458,36 @@ fn test_gjf_connectivity() {
 // connectivity specs:1 ends here
 
 // [[file:../../gchemol-readwrite.note::fc56d173][fc56d173]]
-const ATOM_KEY_ONIOM_LAYER: &'static str = "gaussian-oniom-layer";
-
-fn parse_molecule_meta(s: &str) -> IResult<&str, String> {
+fn parse_molecule_extra(s: &str) -> IResult<&str, GaussianMoleculeInfo> {
     let mut link0 = opt(link0_section);
     do_parse!(
         s,
-        link0 >>             // Link0 commands, which is optional section
-        route_section >>     // route section contains job keywords
-        t: title_section >>  // molecular title
-        (t)
+        l: link0         >> // Link0 commands, which is optional section
+        r: route_section >> // route section contains job keywords
+        t: title_section >> // molecular title
+        ({
+            let mut extra  = GaussianMoleculeInfo::default();
+            // add prefix "%" for each link0 cmd
+            extra.link0 = l.map(|x| x.iter().map(|s| format!("%{s}")).join("\n"));
+            extra.route = r.to_owned().into();
+            extra.title = t.to_owned().into();
+            extra
+        })
     )
 }
 
-fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
+fn parse_molecule_specs<'a>(s: &'a str, extra: &mut GaussianMoleculeInfo) -> IResult<&'a str, Molecule> {
     let mut read_atoms = many1(atom_line);
     let mut read_bonds = opt(many1(read_connect_line));
     do_parse!(
         s,
-        read_charge_and_spin_list >> // charge and spin multipy
-        atoms: read_atoms         >> // atom symbol, coordinates, atom type, ...
-        blank_line                >>
-        bonds: read_bonds         >> // connectivity section
+        cslist: read_charge_and_spin_list >> // charge and spin multipy
+        atoms: read_atoms                 >> // atom symbol, coordinates, atom type, ...
+        blank_line                        >>
+        bonds: read_bonds                 >> // connectivity section
         ({
+            // set charge and multiplicity
+            extra.charge_and_multiplicity = cslist.iter().map(|x| x.to_string()).join(" ").into();
             let mut mol = Molecule::default();
             let mut lat_vectors = vec![];
             let atoms = atoms.into_iter().filter_map(|x| {
@@ -481,13 +530,17 @@ fn parse_molecule_specs(s: &str) -> IResult<&str, Molecule> {
 
 // FIXME: how about gaussian extra input
 pub fn parse_molecule(s: &str) -> Result<Molecule> {
-    let (r, title) = parse_molecule_meta(s).map_err(|e| format_err!("{}", e))?;
+    let (r, mut mol_extra) = parse_molecule_extra(s).map_err(|e| format_err!("{}", e))?;
     // We replace comma with space in molecular specification part for easy
     // parsing.
     let r = r.replace(",", " ");
-    let (r, mut mol) =
-        parse_molecule_specs(&r).map_err(|e| format_err!("parsing gaussian input molecule specification failure: {:}.\n Input stream: {}", e, r))?;
-    mol.set_title(&title);
+    let (r, mut mol) = parse_molecule_specs(&r, &mut mol_extra)
+        .map_err(|e| format_err!("parsing gaussian input molecule specification failure: {:}.\n Input stream: {}", e, r))?;
+    // NOTE: title card could be verbose
+    // if let Some(title) = &mol_extra.title {
+    //     mol.set_title(&title);
+    // }
+    mol_extra.attach(&mut mol);
 
     Ok(mol)
 }
@@ -567,17 +620,9 @@ fn format_atom(a: &Atom) -> String {
 fn format_molecule(mol: &Molecule) -> String {
     let mut lines = String::new();
 
-    let link0 = "%nproc=1\n%mem=20MW";
-    let route = "#p sp scf=tight HF/3-21G* geom=connect test";
-    lines.push_str(&format!("{}\n{}\n", link0, route));
-    lines.push_str("\n");
+    let extra = GaussianMoleculeInfo::extract(mol).unwrap_or_default();
+    lines.push_str(&format!("{extra}\n"));
 
-    // title section
-    lines.push_str("Title Card Required\n");
-    lines.push_str("\n");
-
-    // TODO: take from molecule
-    lines.push_str("0 1\n");
     for (_, a) in mol.atoms() {
         let line = format_atom(&a);
         lines.push_str(&line);
@@ -627,12 +672,14 @@ impl GaussianInputFile {
         GaussianAtomInfo::default()
     }
 
-    /// Extract extra atom information from `atom`.
+    /// Extract extra atom information from `atom`, which can be
+    /// attached to `Atom` later.
     pub fn extract_extra_atom_info(atom: &Atom) -> Option<GaussianAtomInfo> {
         GaussianAtomInfo::extract(atom).ok()
     }
 
-    /// Extract extra molecule information from `mol`.
+    /// Extract extra molecule information from `mol`, which can be
+    /// attached to `Molecule` later.
     pub fn extract_extra_molecule_info(mol: &Molecule) -> Option<GaussianMoleculeInfo> {
         todo!();
     }
@@ -687,6 +734,8 @@ fn test_gaussian_input_file() -> Result<()> {
         }
     }
     assert_eq!(atoms_high_layer.len(), 5);
+    let x = GaussianInputFile().format_molecule(&mol)?;
+    println!("{x}\n**********");
     Ok(())
 }
 // 457b015d ends here
