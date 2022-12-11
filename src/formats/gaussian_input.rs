@@ -112,12 +112,24 @@ impl GaussianMoleculeInfo {
         let _ = mol.properties.store(MOLE_KEY, &self);
     }
 
-    /// Set route card for Gaussian input.
+    /// Set route card for Gaussian input. NOTE: the "#" prefix must
+    /// be present in `route`.
     pub fn set_route(&mut self, route: &str) {
         self.route = route.to_owned().into();
     }
 
-    /// Set route card for Gaussian input.
+    /// Return the route in Gaussian input.
+    pub fn get_route(&self) -> Option<&str> {
+        self.route.as_deref()
+    }
+
+    /// Return the link0 commands in Gaussian input.
+    pub fn get_link0(&self) -> Option<&str> {
+        self.link0.as_deref()
+    }
+
+    /// Set route card for Gaussian input. NOTE: the "%" prefix must
+    /// be present in each link0 command as in `link0`.
     pub fn set_link0(&mut self, link0: &str) {
         self.route = link0.to_owned().into();
     }
@@ -469,7 +481,7 @@ fn parse_molecule_extra(s: &str) -> IResult<&str, GaussianMoleculeInfo> {
             let mut extra  = GaussianMoleculeInfo::default();
             // add prefix "%" for each link0 cmd
             extra.link0 = l.map(|x| x.iter().map(|s| format!("%{s}")).join("\n"));
-            extra.route = r.to_owned().into();
+            extra.route = format!("#P {r}").to_owned().into();
             extra.title = t.to_owned().into();
             extra
         })
@@ -666,22 +678,16 @@ fn format_molecule(mol: &Molecule) -> String {
 pub struct GaussianInputFile();
 
 impl GaussianInputFile {
-    /// Return a type for setting extra atom information such as ONIOM
-    /// layer.
-    pub fn extra_atom_info() -> GaussianAtomInfo {
-        GaussianAtomInfo::default()
-    }
-
     /// Extract extra atom information from `atom`, which can be
     /// attached to `Atom` later.
-    pub fn extract_extra_atom_info(atom: &Atom) -> Option<GaussianAtomInfo> {
-        GaussianAtomInfo::extract(atom).ok()
+    pub fn extra_atom_info(atom: &Atom) -> GaussianAtomInfo {
+        GaussianAtomInfo::extract(atom).ok().unwrap_or_default()
     }
 
     /// Extract extra molecule information from `mol`, which can be
     /// attached to `Molecule` later.
-    pub fn extract_extra_molecule_info(mol: &Molecule) -> Option<GaussianMoleculeInfo> {
-        todo!();
+    pub fn extra_molecule_info(mol: &Molecule) -> GaussianMoleculeInfo {
+        GaussianMoleculeInfo::extract(mol).ok().unwrap_or_default()
     }
 }
 
@@ -724,18 +730,27 @@ impl ReadPart for GaussianInputFile {
 #[test]
 fn test_gaussian_input_file() -> Result<()> {
     let s = gut::fs::read_file("tests/files/gaussian/test0769.com")?;
-    let mol = GaussianInputFile().parse_molecule(&s)?;
+    let mut mol = GaussianInputFile().parse_molecule(&s)?;
     let mut atoms_high_layer = vec![];
     for (i, a) in mol.atoms() {
-        let extra = GaussianInputFile::extract_extra_atom_info(&a);
-        match extra.unwrap().get_oniom_layer() {
+        let extra = GaussianInputFile::extra_atom_info(&a);
+        match extra.get_oniom_layer() {
             Some("H") => atoms_high_layer.push(i),
             _ => {}
         }
     }
     assert_eq!(atoms_high_layer.len(), 5);
-    let x = GaussianInputFile().format_molecule(&mol)?;
-    println!("{x}\n**********");
+
+    // set molecule level attributes
+    let mut extra = GaussianInputFile::extra_molecule_info(&mol);
+    extra.set_route("# opt B3LYP/6-31G**");
+    extra.attach(&mut mol);
+    let fs = GaussianInputFile().format_molecule(&mol)?;
+    let mol_ = GaussianInputFile().parse_molecule(&fs)?;
+    assert_eq!(mol.natoms(), mol_.natoms());
+    let extra_ = GaussianInputFile::extra_molecule_info(&mol);
+    assert_eq!(extra.get_route(), extra_.get_route());
+
     Ok(())
 }
 // 457b015d ends here
