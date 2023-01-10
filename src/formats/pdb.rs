@@ -398,14 +398,20 @@ END\n
 }
 // parse:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*format][format:1]]
+// [[file:../../gchemol-readwrite.note::ccd72c38][ccd72c38]]
 fn format_molecule(mol: &Molecule) -> String {
     if mol.natoms() > 9999 {
-        eprintln!("PDB format is incapable for large molecule (natoms < 9999)");
+        warn!("PDB format is incapable for large molecule (natoms < 9999)");
     }
 
     // atoms
     let mut lines = String::from("REMARK Created by gchemol\n");
+    // write crystal info
+    if let Some(lat) = mol.get_lattice() {
+        let [a, b, c] = lat.lengths();
+        let [alpha, beta, gamma] = lat.angles();
+        lines.push_str(&format!("CRYST1{a:9}{b:9}{c:9}{alpha:7.2}{beta:7.2}{gamma:7.2} P1            1\n"))
+    }
     for (i, a) in mol.atoms() {
         let line = format_atom(i, a);
         lines.push_str(&line);
@@ -420,7 +426,7 @@ fn format_molecule(mol: &Molecule) -> String {
 
     lines
 }
-// format:1 ends here
+// ccd72c38 ends here
 
 // [[file:../../gchemol-readwrite.note::*chemfile][chemfile:1]]
 #[derive(Clone, Copy, Debug)]
