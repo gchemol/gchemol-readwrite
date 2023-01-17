@@ -632,7 +632,11 @@ fn format_atom(a: &Atom) -> String {
 fn format_molecule(mol: &Molecule) -> String {
     let mut lines = String::new();
 
-    let extra = GaussianMoleculeInfo::extract(mol).unwrap_or_default();
+    let mut extra = GaussianMoleculeInfo::extract(mol).unwrap_or_default();
+    if extra.title.is_none() {
+        extra.title = mol.title().into();
+    }
+
     lines.push_str(&format!("{extra}\n"));
 
     for (_, a) in mol.atoms() {
