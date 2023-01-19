@@ -260,9 +260,11 @@ fn parse_molecule(s: &str) -> Result<Molecule> {
 }
 // parse:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*format][format:1]]
+// [[file:../../gchemol-readwrite.note::078643b6][078643b6]]
 /// Represent molecule in .cif format
 fn format_molecule(mol: &Molecule) -> Result<String> {
+    use std::collections::HashMap;
+
     let mut lines = String::new();
 
     // 1. meta inforation
@@ -297,10 +299,13 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
     lines.push_str("_atom_site_fract_y\n");
     lines.push_str("_atom_site_fract_z\n");
 
+    let mut element_count = HashMap::new();
     for (_, a) in mol.atoms() {
         let position = a.position();
         let symbol = a.symbol();
-        let name = a.label();
+        let c = element_count.entry(symbol).and_modify(|c| *c += 1).or_insert(1);
+        // set site label as "Fe12" alike
+        let name = a.get_label().map(|l| l.to_string()).unwrap_or(format!("{symbol}{c}"));
         let p = lat.to_frac(position);
         let s = format!("{:4}{:6}{:12.5}{:12.5}{:12.5}\n", symbol, name, p.x, p.y, p.z);
         lines.push_str(&s);
@@ -344,7 +349,16 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 
     Ok(lines)
 }
-// format:1 ends here
+
+#[test]
+#[ignore]
+fn test_cif_format() {
+    let mut mol = Molecule::from_database("CH4");
+    mol.set_lattice_from_bounding_box(1.0);
+    let s = format_molecule(&mol).unwrap();
+    println!("{s}");
+}
+// 078643b6 ends here
 
 // [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
 #[derive(Clone, Copy, Debug)]
