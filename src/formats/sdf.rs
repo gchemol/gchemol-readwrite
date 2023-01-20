@@ -221,10 +221,10 @@ impl ParseMolecule for SdfFile {
 }
 // chemfile:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::b6db584e][b6db584e]]
 impl ReadPart for SdfFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Terminated(|line: &str| line == "$$$$\n").read_next(context)
     }
 }
-// new:1 ends here
+// b6db584e ends here

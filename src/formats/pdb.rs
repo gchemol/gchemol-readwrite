@@ -410,7 +410,7 @@ fn format_molecule(mol: &Molecule) -> String {
     if let Some(lat) = mol.get_lattice() {
         let [a, b, c] = lat.lengths();
         let [alpha, beta, gamma] = lat.angles();
-        lines.push_str(&format!("CRYST1{a:9}{b:9}{c:9}{alpha:7.2}{beta:7.2}{gamma:7.2} P1            1\n"))
+        lines.push_str(&format!("CRYST1{a:9.4}{b:9.4}{c:9.4}{alpha:7.2}{beta:7.2}{gamma:7.2} P1            1\n"))
     }
     for (i, a) in mol.atoms() {
         let line = format_atom(i, a);

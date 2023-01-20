@@ -79,7 +79,7 @@ pub(self) trait ParseMolecule {
 }
 // chemical file:1 ends here
 
-// [[file:../gchemol-readwrite.note::*parse iter][parse iter:1]]
+// [[file:../gchemol-readwrite.note::20f747a1][20f747a1]]
 use gchemol_parser::{partition::Partitions, partition::ReadPart, TextReader};
 
 /// Parse many molecules
@@ -137,7 +137,7 @@ where
         }
     }
 }
-// parse iter:1 ends here
+// 20f747a1 ends here
 
 // [[file:../gchemol-readwrite.note::fa51a104][fa51a104]]
 pub use self::cif::CifFile;
