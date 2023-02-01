@@ -454,11 +454,17 @@ impl ParseMolecule for PdbFile {
 }
 // chemfile:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::cc0cbfc6][cc0cbfc6]]
 impl ReadPart for PdbFile {
     // for multi-model records
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Terminated(|line: &str| line == "ENDMDL\n").read_next(context)
     }
 }
-// new:1 ends here
+
+impl PdbFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.partitions(*self)
+    }
+}
+// cc0cbfc6 ends here

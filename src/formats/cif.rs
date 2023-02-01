@@ -388,22 +388,20 @@ impl ParseMolecule for CifFile {
 
         Ok(mol)
     }
-
-    /// Skip reading some lines.
-    fn pre_read_hook<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> TextReader<R>
-    where
-        Self: Sized,
-    {
-        r.seek_line(|line| line.starts_with("data_"));
-        r
-    }
 }
 // 61397c98 ends here
 
-// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
+// [[file:../../gchemol-readwrite.note::66383e10][66383e10]]
 impl ReadPart for CifFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Preceded(|line: &str| line.starts_with("data_")).read_next(context)
     }
 }
-// impl partition:1 ends here
+
+impl CifFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.seek_line(|line| line.starts_with("data_"));
+        r.partitions(*self)
+    }
+}
+// 66383e10 ends here

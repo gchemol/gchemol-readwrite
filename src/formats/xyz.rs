@@ -288,4 +288,16 @@ impl ReadPart for PlainXyzFile {
         Terminated(|line: &str| line.trim().is_empty()).read_next(context)
     }
 }
+
+impl XyzFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.partitions(*self)
+    }
+}
+
+impl PlainXyzFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.partitions(*self)
+    }
+}
 // d27ea4ee ends here

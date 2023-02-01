@@ -227,4 +227,10 @@ impl ReadPart for SdfFile {
         Terminated(|line: &str| line == "$$$$\n").read_next(context)
     }
 }
+
+impl SdfFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.partitions(*self)
+    }
+}
 // b6db584e ends here

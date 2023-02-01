@@ -400,7 +400,13 @@ fn test_vasp_input_parsable() {
 }
 // chemfile:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
+// [[file:../../gchemol-readwrite.note::13101db6][13101db6]]
 // read all available stream at once
 impl ReadPart for PoscarFile {}
-// impl partition:1 ends here
+
+impl PoscarFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.partitions(*self)
+    }
+}
+// 13101db6 ends here

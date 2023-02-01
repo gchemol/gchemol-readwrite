@@ -728,6 +728,12 @@ impl ReadPart for GaussianInputFile {
         .read_next(context)
     }
 }
+
+impl GaussianInputFile {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.partitions(*self)
+    }
+}
 // 2530a669 ends here
 
 // [[file:../../gchemol-readwrite.note::457b015d][457b015d]]

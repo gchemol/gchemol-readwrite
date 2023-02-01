@@ -396,7 +396,7 @@ fn format_molecule(mol: &Molecule) -> Result<String> {
 }
 // format:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+// [[file:../../gchemol-readwrite.note::dfc305c8][dfc305c8]]
 #[derive(Copy, Clone, Debug)]
 pub struct Mol2File();
 
@@ -419,22 +419,20 @@ impl ParseMolecule for Mol2File {
         let (_, mol) = read_molecule(input).map_err(|e| format_err!("{:}", e))?;
         Ok(mol)
     }
-
-    /// Skip reading some lines.
-    fn pre_read_hook<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> TextReader<R>
-    where
-        Self: Sized,
-    {
-        r.seek_line(|line| line.starts_with("@<TRIPOS>MOLECULE"));
-        r
-    }
 }
-// impl chemfile:1 ends here
+// dfc305c8 ends here
 
 // [[file:../../gchemol-readwrite.note::3137ddbd][3137ddbd]]
 impl ReadPart for Mol2File {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Preceded(|line: &str| line.starts_with("@<TRIPOS>MOLECULE")).read_next(context)
+    }
+}
+
+impl Mol2File {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+        r.seek_line(|line| line.starts_with("@<TRIPOS>MOLECULE"));
+        r.partitions(*self)
     }
 }
 // 3137ddbd ends here

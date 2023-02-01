@@ -56,11 +56,7 @@ pub(self) trait ChemicalFile: ParseMolecule {
 
     /// print a brief description about a chemical file format
     fn describe(&self) {
-        println!(
-            "filetype: {:?}, possible extensions: {:?}",
-            self.ftype(),
-            self.possible_extensions()
-        );
+        println!("filetype: {:?}, possible extensions: {:?}", self.ftype(), self.possible_extensions());
     }
 }
 
@@ -68,14 +64,6 @@ pub(self) trait ChemicalFile: ParseMolecule {
 pub(self) trait ParseMolecule {
     /// parse molecule from string slice in a part of chemical file.
     fn parse_molecule(&self, input: &str) -> Result<Molecule>;
-
-    /// Hook before start reading.
-    fn pre_read_hook<R: BufRead + Seek>(&self, r: TextReader<R>) -> TextReader<R>
-    where
-        Self: Sized,
-    {
-        r
-    }
 }
 // 25dffdd9 ends here
 
@@ -86,9 +74,7 @@ macro_rules! cf_parse {
     ($chemical_file:expr, $parsed_mols_iter:expr, $reader:expr) => {
         $parsed_mols_iter = {
             let cf = $chemical_file();
-            // apply reading hook
-            let mut r = cf.pre_read_hook($reader);
-            let iter = r.partitions(cf).map(move |part| cf.parse_molecule(part.as_str()));
+            let iter = cf.partitions($reader).map(move |part| cf.parse_molecule(part.as_str()));
             Some(iter)
         };
     };
