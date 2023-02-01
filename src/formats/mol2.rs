@@ -431,22 +431,10 @@ impl ParseMolecule for Mol2File {
 }
 // impl chemfile:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::3137ddbd][3137ddbd]]
 impl ReadPart for Mol2File {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Preceded(|line: &str| line.starts_with("@<TRIPOS>MOLECULE")).read_next(context)
     }
 }
-
-#[test]
-fn test_mol2() -> Result<()> {
-    let f = "./tests/files/mol2/multi-obabel.mol2";
-    let r = TextReader::from_path(f)?;
-    let mols = Mol2File().parse_molecules(r);
-    for m in mols {
-        dbg!(m?.natoms());
-    }
-
-    Ok(())
-}
-// new:1 ends here
+// 3137ddbd ends here

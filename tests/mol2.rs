@@ -1,6 +1,4 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use gchemol_core::Molecule;
 use gchemol_readwrite::prelude::*;
 use gchemol_readwrite::read_all;
@@ -8,9 +6,7 @@ use gchemol_readwrite::read_all;
 use gut::prelude::*;
 // imports:1 ends here
 
-// tests
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*tests][tests:1]]
+// [[file:../gchemol-readwrite.note::b028087c][b028087c]]
 #[test]
 fn test_formats_mol2() {
     let f = "tests/files/mol2/ch3f-dos.mol2";
@@ -44,4 +40,4 @@ fn test_formats_mol2() {
     assert_eq!(1, mols.len());
     assert!(mols[0].lattice.is_some());
 }
-// tests:1 ends here
+// b028087c ends here

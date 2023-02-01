@@ -360,7 +360,7 @@ fn test_cif_format() {
 }
 // 078643b6 ends here
 
-// [[file:../../gchemol-readwrite.note::*impl chemfile][impl chemfile:1]]
+// [[file:../../gchemol-readwrite.note::61397c98][61397c98]]
 #[derive(Clone, Copy, Debug)]
 pub struct CifFile();
 
@@ -398,12 +398,12 @@ impl ParseMolecule for CifFile {
         r
     }
 }
-// impl chemfile:1 ends here
+// 61397c98 ends here
 
-// [[file:../../gchemol-readwrite.note::*new][new:1]]
+// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
 impl ReadPart for CifFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         Preceded(|line: &str| line.starts_with("data_")).read_next(context)
     }
 }
-// new:1 ends here
+// impl partition:1 ends here

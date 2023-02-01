@@ -264,7 +264,7 @@ impl ChemicalFile for PlainXyzFile {
 }
 // plain xyz:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
+// [[file:../../gchemol-readwrite.note::d27ea4ee][d27ea4ee]]
 impl ReadPart for XyzFile {
     fn read_next(&self, context: ReadContext) -> ReadAction {
         let n = context.number_of_lines();
@@ -288,4 +288,4 @@ impl ReadPart for PlainXyzFile {
         Terminated(|line: &str| line.trim().is_empty()).read_next(context)
     }
 }
-// impl partition:1 ends here
+// d27ea4ee ends here

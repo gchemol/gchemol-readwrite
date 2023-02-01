@@ -15,7 +15,7 @@ use gut::fs::*;
 type FileReader = BufReader<File>;
 // imports:1 ends here
 
-// [[file:../gchemol-readwrite.note::*exports][exports:1]]
+// [[file:../gchemol-readwrite.note::9a316986][9a316986]]
 pub(self) use gchemol_core::{Atom, AtomKind, Bond, BondKind, Lattice, Molecule, Vector3f};
 pub(self) use gut::prelude::*;
 
@@ -24,10 +24,10 @@ pub(self) mod parser {
     pub use gchemol_parser::partition::{Partitions, Preceded, ReadAction, ReadContext, ReadPart, Terminated};
     pub use gchemol_parser::TextReader;
 }
-// exports:1 ends here
+// 9a316986 ends here
 
-// [[file:../gchemol-readwrite.note::*chemical file][chemical file:1]]
-pub(self) trait ChemicalFile: ParseMolecule + ReadPart {
+// [[file:../gchemol-readwrite.note::25dffdd9][25dffdd9]]
+pub(self) trait ChemicalFile: ParseMolecule {
     /// Chemical file type.
     fn ftype(&self) -> &str;
 
@@ -77,67 +77,68 @@ pub(self) trait ParseMolecule {
         r
     }
 }
-// chemical file:1 ends here
+// 25dffdd9 ends here
 
-// [[file:../gchemol-readwrite.note::20f747a1][20f747a1]]
-use gchemol_parser::{partition::Partitions, partition::ReadPart, TextReader};
+// [[file:../gchemol-readwrite.note::640d1293][640d1293]]
+use gchemol_parser::TextReader;
 
-/// Parse many molecules
-pub(self) trait ParseMoleculeIter<R>
-where
-    R: BufRead + Seek,
-{
-    type IterMolecule: Iterator<Item = Result<Molecule>>;
-
-    /// Return an iterator over parsed molecules from reader `r`.
-    fn parse_molecules(&self, r: TextReader<R>) -> Self::IterMolecule;
+macro_rules! cf_parse {
+    ($chemical_file:expr, $parsed_mols_iter:expr, $reader:expr) => {
+        $parsed_mols_iter = {
+            let cf = $chemical_file();
+            // apply reading hook
+            let mut r = cf.pre_read_hook($reader);
+            let iter = r.partitions(cf).map(move |part| cf.parse_molecule(part.as_str()));
+            Some(iter)
+        };
+    };
 }
 
-// cannot use dynamic dispatching
-impl<R, T> ParseMoleculeIter<R> for T
-where
-    T: ChemicalFile + Copy,
-    R: BufRead + Seek,
-{
-    type IterMolecule = ParsedMolecules<R, Self>;
+impl ChemicalFileParser {
+    pub fn parse_molecules_from<R>(&self, r: TextReader<R>) -> Result<impl Iterator<Item = Molecule>>
+    where
+        R: BufRead + Seek,
+    {
+        let mut p1 = None;
+        let mut p2 = None;
+        let mut p3 = None;
+        let mut p4 = None;
+        let mut p5 = None;
+        let mut p6 = None;
+        let mut p7 = None;
+        let mut p8 = None;
 
-    /// Return an iterator over parsed molecules from reader `r`.
-    fn parse_molecules(&self, r: TextReader<R>) -> Self::IterMolecule {
-        // apply reading hook
-        let mut r = self.pre_read_hook(r);
-        ParsedMolecules {
-            partitions: r.partitions(*self),
-            parser: *self,
+        match self.0.as_str() {
+            "text/xyz" => cf_parse!(XyzFile, p1, r),
+            "text/pxyz" => cf_parse!(PlainXyzFile, p2, r),
+            "text/mol2" => cf_parse!(Mol2File, p3, r),
+            "text/cif" => cf_parse!(CifFile, p4, r),
+            "text/sdf" => cf_parse!(SdfFile, p5, r),
+            "text/pdb" => cf_parse!(PdbFile, p6, r),
+            "vasp/input" => cf_parse!(PoscarFile, p7, r),
+            "gaussian/input" => cf_parse!(GaussianInputFile, p8, r),
+            _ => bail!("No available parser found"),
         }
+        Ok(p1
+            .into_iter()
+            .flatten()
+            .chain(p2.into_iter().flatten())
+            .chain(p3.into_iter().flatten())
+            .chain(p4.into_iter().flatten())
+            .chain(p5.into_iter().flatten())
+            .chain(p6.into_iter().flatten())
+            .chain(p7.into_iter().flatten())
+            .chain(p8.into_iter().flatten())
+            .filter_map(|parsed| match parsed {
+                Ok(mol) => Some(mol),
+                Err(e) => {
+                    eprintln!("found parsing error: {:?}", e);
+                    None
+                }
+            }))
     }
 }
-
-pub(self) struct ParsedMolecules<R, T>
-where
-    R: BufRead + Seek,
-    T: ChemicalFile,
-{
-    partitions: Partitions<R, T>,
-    parser: T,
-}
-
-impl<R, T> Iterator for ParsedMolecules<R, T>
-where
-    R: BufRead + Seek,
-    T: ChemicalFile,
-{
-    type Item = Result<Molecule>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(part) = self.partitions.next() {
-            let parsed = self.parser.parse_molecule(&part);
-            Some(parsed)
-        } else {
-            None
-        }
-    }
-}
-// 20f747a1 ends here
+// 640d1293 ends here
 
 // [[file:../gchemol-readwrite.note::fa51a104][fa51a104]]
 pub use self::cif::CifFile;
@@ -163,55 +164,6 @@ impl ChemicalFileParser {
 
     pub fn guess(path: &Path, fmt: Option<&str>) -> Option<Self> {
         guess_chemical_file_format(path, fmt).map(|cf| Self::new(cf.ftype()))
-    }
-
-    pub fn parse_molecules_from<R>(&self, r: TextReader<R>) -> Result<impl Iterator<Item = Molecule>>
-    where
-        R: BufRead + Seek,
-    {
-        let mut p1 = None;
-        let mut p2 = None;
-        let mut p3 = None;
-        let mut p4 = None;
-        let mut p5 = None;
-        let mut p6 = None;
-        let mut p7 = None;
-        let mut p8 = None;
-
-        macro_rules! cf_parse {
-            ($cf:expr, $pn:expr) => {
-                $pn = Some($cf().parse_molecules(r));
-            };
-        }
-
-        match self.0.as_str() {
-            "text/xyz" => cf_parse!(XyzFile, p1),
-            "text/pxyz" => cf_parse!(PlainXyzFile, p2),
-            "text/mol2" => cf_parse!(Mol2File, p3),
-            "text/cif" => cf_parse!(CifFile, p4),
-            "text/sdf" => cf_parse!(SdfFile, p5),
-            "text/pdb" => cf_parse!(PdbFile, p6),
-            "vasp/input" => cf_parse!(PoscarFile, p7),
-            "gaussian/input" => cf_parse!(GaussianInputFile, p8),
-            _ => bail!("No available parser found"),
-        }
-        Ok(p1
-            .into_iter()
-            .flatten()
-            .chain(p2.into_iter().flatten())
-            .chain(p3.into_iter().flatten())
-            .chain(p4.into_iter().flatten())
-            .chain(p5.into_iter().flatten())
-            .chain(p6.into_iter().flatten())
-            .chain(p7.into_iter().flatten())
-            .chain(p8.into_iter().flatten())
-            .filter_map(|parsed| match parsed {
-                Ok(mol) => Some(mol),
-                Err(e) => {
-                    eprintln!("found parsing error: {:?}", e);
-                    None
-                }
-            }))
     }
 
     pub fn parse_molecules(&self, path: &Path) -> Result<impl Iterator<Item = Molecule>> {
