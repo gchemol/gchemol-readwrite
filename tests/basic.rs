@@ -1,6 +1,4 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use gchemol_core::Molecule;
 use gchemol_readwrite::prelude::*;
 use gchemol_readwrite::read_all;
@@ -8,9 +6,7 @@ use gchemol_readwrite::read_all;
 use gut::prelude::*;
 // imports:1 ends here
 
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/gchemol-readwrite/gchemol-readwrite.note::*test][test:1]]
+// [[file:../gchemol-readwrite.note::391edd88][391edd88]]
 #[test]
 fn test_readwrite() -> Result<()> {
     use tempfile::tempdir;
@@ -55,4 +51,4 @@ fn test_readwrite() -> Result<()> {
 
     Ok(())
 }
-// test:1 ends here
+// 391edd88 ends here

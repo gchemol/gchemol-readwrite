@@ -51,7 +51,6 @@ C -11.4286 -1.3155  0.0000
 // bdc38ed5 ends here
 
 // [[file:../../gchemol-readwrite.note::f20b5155][f20b5155]]
-// return molecule title and atoms
 fn read_atoms_xyz(s: &str) -> IResult<&str, (&str, Vec<(&str, Point3, &str)>)> {
     do_parse!(
         s,
@@ -93,51 +92,46 @@ H -13.7062  1.5395  0.0000";
 // [[file:../../gchemol-readwrite.note::ed71e42e][ed71e42e]]
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
+    let lines: Vec<_> = input.trim().lines().collect();
     let mol = if plain {
-        let (_, atoms) = read_atoms_pxyz(input).map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
-        build_mol(atoms)
+        build_mol_xyz(&lines[..])?
     } else {
-        let (_, (title, atoms)) = read_atoms_xyz(input).map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
-        let mut mol = build_mol(atoms);
-        mol.set_title(&title);
+        let natoms: usize = lines[0].trim().parse()?;
+        let title = lines[1].trim();
+        let mut mol = build_mol_xyz(&lines[2..])?;
+        mol.set_title(title.to_owned());
+        let natoms_ = mol.natoms();
+        if natoms_ != natoms {
+            warn!("found xyz format error: expand {natoms}, but found {natoms_}");
+        }
         mol
     };
 
     Ok(mol)
 }
 
-fn parse_velocities(line: &str) -> Option<[f64; 3]> {
-    use std::convert::TryInto;
-
-    let vxyz: Option<Vec<f64>> = line.split_whitespace().map(|x| x.parse().ok()).collect();
-    vxyz?.try_into().ok()
-}
-
 /// Handle dummy TV atoms (transitional vector, traditionally used in
 /// Gaussian/MOPAC package for periodic system)
-fn build_mol(atoms: Vec<(&str, [f64; 3], &str)>) -> Molecule {
+fn build_mol_xyz(lines: &[&str]) -> Result<Molecule> {
+    let mut atoms = vec![];
+    for line in lines.iter() {
+        let a: Atom = line.parse()?;
+        atoms.push(a);
+    }
+
+    // HACK: parse TV for lattice vectors
     let mut lat_vectors = vec![];
-    let atoms = atoms.into_iter().filter_map(|(sym, positions, other)| {
-        let mut a: Atom = (sym, positions).into();
-        // HACK: parse velocities
-        if !other.trim().is_empty() {
-            if let Some(xyz) = parse_velocities(other) {
-                a.set_velocity(xyz);
-            } else {
-                debug!("ignored invalid fields: {other}");
+    let atoms = atoms.into_iter().filter_map(|a| match a.kind() {
+        AtomKind::Dummy(x) => {
+            if x == "TV" {
+                trace!("found TV dummy atom.");
+                lat_vectors.push(a.position());
             }
+            None
         }
-        match a.kind() {
-            AtomKind::Dummy(x) => {
-                if x == "TV" {
-                    trace!("found TV dummy atom.");
-                    lat_vectors.push(a.position());
-                }
-                None
-            }
-            AtomKind::Element(x) => Some(a),
-        }
+        AtomKind::Element(x) => Some(a),
     });
+
     let mut mol = Molecule::from_atoms(atoms);
 
     // construct lattice parsed from three "TV" dummy atoms.
@@ -147,7 +141,8 @@ fn build_mol(atoms: Vec<(&str, [f64; 3], &str)>) -> Molecule {
     } else if !lat_vectors.is_empty() {
         error!("Expect 3, but found {} TV atoms.", lat_vectors.len());
     }
-    mol
+
+    Ok(mol)
 }
 // ed71e42e ends here
 
