@@ -94,14 +94,10 @@ H -13.7062  1.5395  0.0000";
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
     let mol = if plain {
-        let (_, atoms) = read_atoms_pxyz(input)
-            .map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
-
+        let (_, atoms) = read_atoms_pxyz(input).map_err(|e| format_err!("Failed to parse atoms in plain xyz format: {}", e))?;
         build_mol(atoms)
     } else {
-        let (_, (title, atoms)) = read_atoms_xyz(input)
-            .map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
-
+        let (_, (title, atoms)) = read_atoms_xyz(input).map_err(|e| format_err!("Failed to parse atoms in xyz format: {}", e))?;
         let mut mol = build_mol(atoms);
         mol.set_title(&title);
         mol
@@ -265,39 +261,45 @@ impl ChemicalFile for PlainXyzFile {
 // plain xyz:1 ends here
 
 // [[file:../../gchemol-readwrite.note::d27ea4ee][d27ea4ee]]
-impl ReadPart for XyzFile {
-    fn read_next(&self, context: ReadContext) -> ReadAction {
-        let n = context.number_of_lines();
-        // the first line contains the number of atoms in this part
-        if let Ok(natoms) = context.line(1).trim().parse::<usize>() {
-            if n >= natoms + 2 {
-                ReadAction::Done(n)
-            } else {
-                ReadAction::Need(natoms + 2 - n)
-            }
-        } else {
-            warn!("read_part context text: {:?}", context.text());
-            warn!("read_part context line: {:?}", context.line(1));
-            ReadAction::Error("invalid xyz title".into())
-        }
-    }
-}
-
-impl ReadPart for PlainXyzFile {
-    fn read_next(&self, context: ReadContext) -> ReadAction {
-        Terminated(|line: &str| line.trim().is_empty()).read_next(context)
-    }
-}
-
 impl XyzFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
-        r.partitions(*self)
+    pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> impl Iterator<Item = String> {
+        std::iter::from_fn(move || {
+            let mut buf = String::new();
+            let _ = reader.read_line(&mut buf)?;
+            let n: usize = buf.trim().parse().ok()?;
+            // skip comment line
+            let _ = reader.read_line(&mut buf)?;
+            // skip lines for n atoms
+            for _ in 0..n {
+                reader.read_line(&mut buf)?;
+            }
+            Some(buf)
+        })
     }
 }
 
 impl PlainXyzFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
-        r.partitions(*self)
+    pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> impl Iterator<Item = String> {
+        std::iter::from_fn(move || {
+            let mut buf = String::new();
+            let mut eof = false;
+            // stop when found an empty line or reach EOF
+            loop {
+                if let Some(n) = reader.read_line(&mut buf) {
+                    let m = buf.len();
+                    if buf[m - n..].trim().is_empty() {
+                        break Some(buf);
+                    }
+                } else {
+                    // we should not miss the last part when reach EOF
+                    if buf.is_empty() {
+                        break None;
+                    } else {
+                        break Some(buf);
+                    }
+                }
+            }
+        })
     }
 }
 // d27ea4ee ends here
