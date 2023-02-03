@@ -153,7 +153,7 @@ impl ChemicalFileParser {
     }
 
     pub fn parse_molecules(&self, path: &Path) -> Result<impl Iterator<Item = Molecule>> {
-        let r = TextReader::from_path(path).context("Parse molecules from path failed")?;
+        let r = TextReader::try_from_path(path).context("Parse molecules from path failed")?;
         self.parse_molecules_from(r)
     }
 }
