@@ -93,6 +93,8 @@ H -13.7062  1.5395  0.0000";
 fn parse_molecule(input: &str, plain: bool) -> Result<Molecule> {
     // plain xyz style with coordinates only?
     let lines: Vec<_> = input.trim().lines().collect();
+    ensure!(lines.len() > 2, "invalid xyz part: {lines:?}");
+
     let mol = if plain {
         build_mol_xyz(&lines[..])?
     } else {
@@ -119,11 +121,12 @@ fn build_mol_xyz(lines: &[&str]) -> Result<Molecule> {
         atoms.push(a);
     }
 
-    // HACK: parse TV for lattice vectors
+    // HACK: parse TV/VEC for lattice vectors
     let mut lat_vectors = vec![];
     let atoms = atoms.into_iter().filter_map(|a| match a.kind() {
         AtomKind::Dummy(x) => {
-            if x == "TV" {
+            // ASE/ADF writes cell vectors using VEC line
+            if x == "TV" || x == "VEC1" || x == "VEC2" || x == "VEC3" {
                 trace!("found TV dummy atom.");
                 lat_vectors.push(a.position());
             }
@@ -255,25 +258,39 @@ impl ChemicalFile for PlainXyzFile {
 }
 // plain xyz:1 ends here
 
-// [[file:../../gchemol-readwrite.note::d27ea4ee][d27ea4ee]]
+// [[file:../../gchemol-readwrite.note::c62a0af4][c62a0af4]]
 impl XyzFile {
     pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        let get_natoms = |line: &str| line.trim().parse::<usize>().ok();
+
         let iter = std::iter::from_fn(move || {
             let mut buf = String::new();
             let _ = reader.read_line(&mut buf)?;
-            let n: usize = buf.trim().parse().ok()?;
+            let natoms: usize = get_natoms(&buf)?;
             // skip comment line
             let _ = reader.read_line(&mut buf)?;
             // skip lines for n atoms
-            for _ in 0..n {
-                reader.read_line(&mut buf)?;
+            for _ in 0..natoms {
+                let n = reader.read_line(&mut buf)?;
             }
-            Some(buf)
+            // read extra lines which may exists as TV or VEC for cell vectors
+            if let Some(line) = reader.peek_line() {
+                if get_natoms(&line).is_some() {
+                    return Some(buf);
+                } else {
+                    for _ in 0..3 {
+                        reader.read_line(&mut buf);
+                    }
+                }
+            }
+            return Some(buf);
         });
         Ok(iter)
     }
 }
+// c62a0af4 ends here
 
+// [[file:../../gchemol-readwrite.note::d27ea4ee][d27ea4ee]]
 impl PlainXyzFile {
     pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> Result<impl Iterator<Item = String>> {
         let iter = std::iter::from_fn(move || {

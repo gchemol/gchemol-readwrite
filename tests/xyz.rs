@@ -54,6 +54,12 @@ fn test_formats_xyz() -> Result<()> {
     assert_eq!(velocities.len(), 3);
     assert_eq!(velocities[0][0], 0.5048153271412877);
 
+    // VEC lines for cell vectors
+    let f = "./tests/files/xyz/ase-vec.xyz";
+    let mol = Molecule::from_file(f)?;
+    let lat = mol.get_lattice().expect("vec cell");
+    assert_eq!(lat.lengths(), [18.094, 20.516, 7.524,]);
+
     Ok(())
 }
 // b3446f93 ends here
