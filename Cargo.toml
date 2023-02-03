@@ -18,7 +18,7 @@ indexmap = "1"
 handlebars = "=4.0"
 tera = "1"
 gut = { version="0.4", package="gchemol-gut" }
-gchemol-core = { version=">=0.0.42, <=0.1.0", features=["adhoc"] }
+gchemol-core = { version="0.1.1", features=["adhoc"] }
 gchemol-parser = "0.4"
 
 [dev-dependencies]
