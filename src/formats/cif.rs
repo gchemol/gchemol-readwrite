@@ -399,9 +399,9 @@ impl ReadPart for CifFile {
 }
 
 impl CifFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
         r.seek_line(|line| line.starts_with("data_"));
-        r.partitions(*self)
+        Ok(r.partitions(*self))
     }
 }
 // 66383e10 ends here

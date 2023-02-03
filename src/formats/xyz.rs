@@ -257,8 +257,8 @@ impl ChemicalFile for PlainXyzFile {
 
 // [[file:../../gchemol-readwrite.note::d27ea4ee][d27ea4ee]]
 impl XyzFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> impl Iterator<Item = String> {
-        std::iter::from_fn(move || {
+    pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        let iter = std::iter::from_fn(move || {
             let mut buf = String::new();
             let _ = reader.read_line(&mut buf)?;
             let n: usize = buf.trim().parse().ok()?;
@@ -269,13 +269,14 @@ impl XyzFile {
                 reader.read_line(&mut buf)?;
             }
             Some(buf)
-        })
+        });
+        Ok(iter)
     }
 }
 
 impl PlainXyzFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> impl Iterator<Item = String> {
-        std::iter::from_fn(move || {
+    pub fn partitions<R: BufRead + Seek>(&self, mut reader: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        let iter = std::iter::from_fn(move || {
             let mut buf = String::new();
             let mut eof = false;
             // stop when found an empty line or reach EOF
@@ -294,7 +295,8 @@ impl PlainXyzFile {
                     }
                 }
             }
-        })
+        });
+        Ok(iter)
     }
 }
 // d27ea4ee ends here

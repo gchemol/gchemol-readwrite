@@ -229,8 +229,8 @@ impl ReadPart for SdfFile {
 }
 
 impl SdfFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
-        r.partitions(*self)
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        Ok(r.partitions(*self))
     }
 }
 // b6db584e ends here

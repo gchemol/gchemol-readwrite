@@ -430,9 +430,9 @@ impl ReadPart for Mol2File {
 }
 
 impl Mol2File {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
-        r.seek_line(|line| line.starts_with("@<TRIPOS>MOLECULE"));
-        r.partitions(*self)
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        r.seek_line(|line| line.starts_with("@<TRIPOS>MOLECULE"))?;
+        Ok(r.partitions(*self))
     }
 }
 // 3137ddbd ends here

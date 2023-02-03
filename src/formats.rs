@@ -74,9 +74,9 @@ macro_rules! cf_parse {
     ($chemical_file:expr, $parsed_mols_iter:expr, $reader:expr) => {
         $parsed_mols_iter = {
             let cf = $chemical_file();
-            let iter = cf.partitions($reader).map(move |part| cf.parse_molecule(part.as_str()));
+            let iter = cf.partitions($reader)?.map(move |part| cf.parse_molecule(part.as_str()));
             Some(iter)
-        };
+        }
     };
 }
 

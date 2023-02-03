@@ -405,8 +405,8 @@ fn test_vasp_input_parsable() {
 impl ReadPart for PoscarFile {}
 
 impl PoscarFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
-        r.partitions(*self)
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        Ok(r.partitions(*self))
     }
 }
 // 13101db6 ends here

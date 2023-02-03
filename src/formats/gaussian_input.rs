@@ -730,8 +730,8 @@ impl ReadPart for GaussianInputFile {
 }
 
 impl GaussianInputFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> impl Iterator<Item = String> {
-        r.partitions(*self)
+    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+        Ok(r.partitions(*self))
     }
 }
 // 2530a669 ends here
