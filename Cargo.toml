@@ -2,7 +2,7 @@
 [package]
 name = "gchemol-readwrite"
 version = "0.1.1"
-edition = "2018"
+edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Reading/writing chemical objects for gchemol"
 homepage = "https://github.com/gchemol/gchemol-readwrite"
