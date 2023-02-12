@@ -24,6 +24,10 @@ fn test_formats_mol2() {
     // serde_json: key must be a string
     let m = &mols[0];
     assert!(m.to_json().is_ok());
+    let s = m.to_json().unwrap();
+    let m_ = Molecule::from_json(&s).expect("mol2 from_json");
+    assert_eq!(m.natoms(), m_.natoms());
+    assert_eq!(m.nbonds(), m_.nbonds());
 
     // molecule trajectory: openbabel converted .mol2 file
     let f = "tests/files/mol2/multi-obabel.mol2";
