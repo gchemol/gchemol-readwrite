@@ -21,6 +21,10 @@ fn test_formats_mol2() {
     assert_eq!(12, mol.natoms());
     assert_eq!(11, mol.nbonds());
 
+    // serde_json: key must be a string
+    let m = &mols[0];
+    assert!(m.to_json().is_ok());
+
     // molecule trajectory: openbabel converted .mol2 file
     let f = "tests/files/mol2/multi-obabel.mol2";
     let mols = read_all(f).expect("multi-obabel");
