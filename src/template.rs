@@ -6,30 +6,11 @@ use gchemol_core::{Atom, Molecule};
 use gut::prelude::*;
 // imports:1 ends here
 
-// [[file:../gchemol-readwrite.note::*mods][mods:1]]
+// [[file:../gchemol-readwrite.note::925f7269][925f7269]]
 mod hbs;
+mod jinja;
 mod tera;
-// mods:1 ends here
-
-// [[file:../gchemol-readwrite.note::*traits][traits:1]]
-/// Render molecule in user defined format
-pub trait TemplateRendering {
-    /// Render with input template file.
-    fn render_with(&self, f: &std::path::Path) -> Result<String>;
-}
-
-impl TemplateRendering for Molecule {
-    fn render_with(&self, path: &std::path::Path) -> Result<String> {
-        let template = gut::fs::read_file(path)?;
-
-        // possible extension in lowercase only
-        match path.extension().and_then(|x| x.to_str()) {
-            Some("hbs") => self::hbs::render_molecule_with(&self, &template),
-            _ => self::tera::render_molecule_with(&self, &template),
-        }
-    }
-}
-// traits:1 ends here
+// 925f7269 ends here
 
 // [[file:../gchemol-readwrite.note::*core][core:1]]
 #[derive(Debug, Serialize)]
@@ -217,8 +198,29 @@ pub(self) fn renderable(mol: &Molecule) -> serde_json::Value {
 }
 // core:1 ends here
 
+// [[file:../gchemol-readwrite.note::3582ce8f][3582ce8f]]
+/// Render molecule in user defined format
+pub trait TemplateRendering {
+    /// Render with input template file.
+    fn render_with(&self, f: &std::path::Path) -> Result<String>;
+}
+
+impl TemplateRendering for Molecule {
+    fn render_with(&self, path: &std::path::Path) -> Result<String> {
+        let template = gut::fs::read_file(path)?;
+
+        // possible extension in lowercase only
+        match path.extension().and_then(|x| x.to_str()) {
+            Some("hbs") => self::hbs::render_molecule_with(&self, &template),
+            Some("tera") => self::tera::render_molecule_with(&self, &template),
+            _ => self::jinja::render_molecule_with(&self, &template),
+        }
+    }
+}
+// 3582ce8f ends here
+
 // [[file:../gchemol-readwrite.note::e22b38a2][e22b38a2]]
-/// Convert molecule to json string
+/// Convert molecule to json string ready for template rendering
 pub fn to_json(mol: &Molecule) -> Result<String> {
     let data = renderable(mol);
     let serialized = serde_json::to_string_pretty(&data)?;
