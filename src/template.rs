@@ -1,10 +1,12 @@
-// [[file:../gchemol-readwrite.note::*imports][imports:1]]
+// [[file:../gchemol-readwrite.note::43d6e881][43d6e881]]
+//! Template rendering for molecule
+
 use indexmap::{indexmap, IndexMap};
 use serde_json::json;
 
 use gchemol_core::{Atom, Molecule};
 use gut::prelude::*;
-// imports:1 ends here
+// 43d6e881 ends here
 
 // [[file:../gchemol-readwrite.note::925f7269][925f7269]]
 mod hbs;
@@ -227,3 +229,7 @@ pub fn to_json(mol: &Molecule) -> Result<String> {
     Ok(serialized)
 }
 // e22b38a2 ends here
+
+// [[file:../gchemol-readwrite.note::0f1f521b][0f1f521b]]
+pub use self::jinja::Template;
+// 0f1f521b ends here

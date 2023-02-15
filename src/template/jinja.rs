@@ -156,7 +156,7 @@ impl<'a> Template<'a> {
     }
 
     /// Load template from file in `path`.
-    pub fn from_file(path: &Path) -> Result<Self> {
+    pub fn try_from_path(path: &Path) -> Result<Self> {
         let src = gut::fs::read_file(path)?;
         let t = Self::from_str(&src);
         Ok(t)
@@ -173,7 +173,7 @@ impl<'a> Template<'a> {
 
 // [[file:../../gchemol-readwrite.note::7d600fb2][7d600fb2]]
 use super::Molecule;
-    
+
 /// render molecule in user defined template
 pub(super) fn render_molecule_with(mol: &Molecule, template: &str) -> Result<String> {
     let s = Template::from_str(template).render(super::renderable(mol))?;

@@ -16,9 +16,8 @@
 #[allow(unused)]
 pub mod formats;
 
-mod template;
-
 mod io;
+mod template;
 // 7fbdd0af ends here
 
 // [[file:../gchemol-readwrite.note::efea89c0][efea89c0]]
@@ -32,4 +31,5 @@ pub mod prelude {
 pub use crate::formats::describe_backends;
 pub use crate::io::{read, read_all, read_from, write, write_format};
 pub use crate::template::to_json;
+pub use crate::template::Template;
 // efea89c0 ends here
