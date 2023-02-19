@@ -111,6 +111,11 @@ pub fn read_from<R: Read + Seek, S: AsRef<str>>(source: R, fmt: S) -> Result<imp
     cf.parse_molecules_from(r)
 }
 
+/// Guess chemical file format from `path`
+pub fn guess_format_from_path(path: &Path) -> Option<String> {
+    crate::formats::ChemicalFileParser::guess_format_from_path(path)
+}
+
 /// Write molecules into path. File format will be determined according to the
 /// path
 pub fn write<'a, P: AsRef<Path>>(path: P, mols: impl IntoIterator<Item = &'a Molecule>) -> Result<()> {
@@ -118,11 +123,7 @@ pub fn write<'a, P: AsRef<Path>>(path: P, mols: impl IntoIterator<Item = &'a Mol
 }
 
 /// Write molecules into path in specific chemical file format.
-pub fn write_format<'a, P: AsRef<Path>>(
-    path: P,
-    mols: impl IntoIterator<Item = &'a Molecule>,
-    fmt: &str,
-) -> Result<()> {
+pub fn write_format<'a, P: AsRef<Path>>(path: P, mols: impl IntoIterator<Item = &'a Molecule>, fmt: &str) -> Result<()> {
     crate::formats::write_chemical_file(path.as_ref(), mols, Some(fmt))
 }
 // 80c178b0 ends here

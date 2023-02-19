@@ -1,0 +1,9 @@
+                         Standard orientation:
+ ---------------------------------------------------------------------
+ Center     Atomic      Atomic             Coordinates (Angstroms)
+ Number     Number       Type             X           Y           Z
+ ---------------------------------------------------------------------
+ {%- for a in molecule.atoms %}
+ {{a.index|format("6.2")}}{{a.number|format("11.2")}}{{0|format("12.2")}}{{a.x|format("14.6")}}{{a.y|format("12.6")}}{{a.z|format("12.6")}}
+ {%- endfor %}
+ ---------------------------------------------------------------------

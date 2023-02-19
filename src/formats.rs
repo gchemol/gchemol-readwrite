@@ -148,6 +148,10 @@ impl ChemicalFileParser {
         guess_chemical_file_format_from_path(path).map(move |cf| Self::new(cf.ftype()))
     }
 
+    pub fn guess_format_from_path(path: &Path) -> Option<String> {
+        guess_chemical_file_format_from_path(path).map(move |cf| cf.ftype().to_owned())
+    }
+
     pub fn guess(path: &Path, fmt: Option<&str>) -> Option<Self> {
         guess_chemical_file_format(path, fmt).map(|cf| Self::new(cf.ftype()))
     }
