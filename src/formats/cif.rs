@@ -230,15 +230,19 @@ fn test_read_cif_atoms() -> Result<()> {
 }
 // atoms:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*parse][parse:1]]
+// [[file:../../gchemol-readwrite.note::0ce7e28c][0ce7e28c]]
 fn cif_title(s: &str) -> IResult<&str, &str> {
     let tag_data = tag("data_");
-    do_parse!(s, tag_data >> t: not_space >> eol >> (t))
+    // title could be empty
+    do_parse!(s, tag_data >> t: read_until_eol >> (t))
 }
 
 /// Create Molecule object from cif stream
 fn parse_molecule(s: &str) -> Result<Molecule> {
-    let (r, title) = cif_title(s).map_err(|e| format_err!("{:}", e))?;
+    let (r, mut title) = cif_title(s).map_err(|e| format_err!("{:}", e))?;
+    if title.is_empty() {
+        title = "untitled";
+    }
     let mut mol = Molecule::new(title);
 
     for part in r.split("loop_\n") {
@@ -258,7 +262,7 @@ fn parse_molecule(s: &str) -> Result<Molecule> {
 
     Ok(mol)
 }
-// parse:1 ends here
+// 0ce7e28c ends here
 
 // [[file:../../gchemol-readwrite.note::078643b6][078643b6]]
 /// Represent molecule in .cif format
