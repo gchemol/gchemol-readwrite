@@ -87,7 +87,57 @@ impl StringIO for Molecule {
 }
 // string:1 ends here
 
+// [[file:../gchemol-readwrite.note::d500136e][d500136e]]
+mod find {
+    use super::*;
+
+    use walkdir::{DirEntry, WalkDir};
+
+    fn is_hidden(entry: &DirEntry) -> bool {
+        entry.file_name().to_str().map(|s| s.starts_with(".")).unwrap_or(false)
+    }
+
+    // regular file name matching `pattern`
+    fn matching(pattern: &str, entry: Option<DirEntry>) -> Option<PathBuf> {
+        let entry = entry?;
+        if entry.file_type().is_file() {
+            let rx = regex::Regex::new(pattern).ok()?;
+            let s = entry.file_name().to_str()?;
+            if rx.find(s).is_some() {
+                return entry.into_path().into();
+            }
+        }
+        None
+    }
+
+    /// Recursively find all files in `root` dir with given file name
+    /// matching regex `pattern`
+    pub fn find_files<'a>(pattern: &'a str, root: &Path) -> impl Iterator<Item = PathBuf> + 'a {
+        WalkDir::new(root)
+            .follow_links(false)
+            .sort_by_file_name()
+            .into_iter()
+            // do not walk into hidden directories
+            .filter_entry(|e| !is_hidden(e))
+            .filter_map(|entry| matching(pattern, entry.ok()))
+    }
+
+    #[test]
+    fn test_find() -> Result<()> {
+        let root = "./tests/files";
+        let files = find_files(r"\.xyz$", root.as_ref()).collect_vec();
+        for file in files {
+            assert!(file.to_string_lossy().ends_with(".xyz"));
+        }
+
+        Ok(())
+    }
+}
+// d500136e ends here
+
 // [[file:../gchemol-readwrite.note::80c178b0][80c178b0]]
+pub use self::find::find_files;
+
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
 pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
