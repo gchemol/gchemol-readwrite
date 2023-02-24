@@ -112,12 +112,14 @@ mod find {
     }
 
     /// Recursively find all files in `root` dir with given file name
-    /// matching regex `pattern`
-    pub fn find_files<'a>(pattern: &'a str, root: &Path) -> impl Iterator<Item = PathBuf> + 'a {
-        WalkDir::new(root)
-            .follow_links(false)
-            .sort_by_file_name()
-            .into_iter()
+    /// matching regex `pattern`. If not recursive, only files in
+    /// `root` dir will be returned.
+    pub fn find_files<'a>(pattern: &'a str, root: &Path, recursive: bool) -> impl Iterator<Item = PathBuf> + 'a {
+        let mut walk = WalkDir::new(root).follow_links(false).sort_by_file_name();
+        if !recursive {
+            walk = walk.max_depth(1);
+        }
+        walk.into_iter()
             // do not walk into hidden directories
             .filter_entry(|e| !is_hidden(e))
             .filter_map(|entry| matching(pattern, entry.ok()))
@@ -126,9 +128,20 @@ mod find {
     #[test]
     fn test_find() -> Result<()> {
         let root = "./tests/files";
-        let files = find_files(r"\.xyz$", root.as_ref()).collect_vec();
+        let files = find_files(r"\.xyz$", root.as_ref(), true).collect_vec();
+        assert!(!files.is_empty());
         for file in files {
             assert!(file.to_string_lossy().ends_with(".xyz"));
+        }
+
+        let root = "./tests/files";
+        let files = find_files(r"\.cif$", root.as_ref(), false).collect_vec();
+        assert!(files.is_empty());
+        let root = "./tests/files/cif";
+        let files = find_files(r"\.cif$", root.as_ref(), false).collect_vec();
+        assert!(!files.is_empty());
+        for file in files {
+            assert!(file.to_string_lossy().ends_with(".cif"));
         }
 
         Ok(())
