@@ -94,7 +94,8 @@ mod find {
     use walkdir::{DirEntry, WalkDir};
 
     fn is_hidden(entry: &DirEntry) -> bool {
-        entry.file_name().to_str().map(|s| s.starts_with(".")).unwrap_or(false)
+        // allow walk into "." but not ".foo"
+        entry.file_name().to_str().map(|s| s.len() > 1 && s.starts_with(".")).unwrap_or(false)
     }
 
     // regular file name matching `pattern`
