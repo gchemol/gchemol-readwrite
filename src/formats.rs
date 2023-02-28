@@ -1,13 +1,15 @@
-// [[file:../gchemol-readwrite.note::*mods][mods:1]]
+// [[file:../gchemol-readwrite.note::95b07dee][95b07dee]]
+mod car;
 mod cif;
 mod mol2;
 mod pdb;
 mod sdf;
+mod xsd;
 mod xyz;
 
 mod gaussian_input;
 mod vasp_input;
-// mods:1 ends here
+// 95b07dee ends here
 
 // [[file:../gchemol-readwrite.note::*imports][imports:1]]
 use gut::fs::*;
