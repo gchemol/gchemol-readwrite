@@ -95,6 +95,7 @@ impl ChemicalFileParser {
         let mut p6 = None;
         let mut p7 = None;
         let mut p8 = None;
+        let mut p9 = None;
 
         match self.0.as_str() {
             "text/xyz" => cf_parse!(XyzFile, p1, r),
@@ -105,6 +106,7 @@ impl ChemicalFileParser {
             "text/pdb" => cf_parse!(PdbFile, p6, r),
             "vasp/input" => cf_parse!(PoscarFile, p7, r),
             "gaussian/input" => cf_parse!(GaussianInputFile, p8, r),
+            "xml/xsd" => cf_parse!(XsdFile, p9, r),
             _ => bail!("No available parser found"),
         }
         Ok(p1
@@ -117,6 +119,7 @@ impl ChemicalFileParser {
             .chain(p6.into_iter().flatten())
             .chain(p7.into_iter().flatten())
             .chain(p8.into_iter().flatten())
+            .chain(p9.into_iter().flatten())
             .filter_map(|parsed| match parsed {
                 Ok(mol) => Some(mol),
                 Err(e) => {
@@ -135,6 +138,7 @@ pub use self::mol2::Mol2File;
 pub use self::pdb::PdbFile;
 pub use self::sdf::SdfFile;
 pub use self::vasp_input::PoscarFile;
+pub use self::xsd::XsdFile;
 
 use self::xyz::PlainXyzFile;
 use self::xyz::XyzFile;
