@@ -134,7 +134,7 @@ impl ChemicalFile for XsdFile {
     }
 
     fn possible_extensions(&self) -> Vec<&str> {
-        vec![".pdb", ".ent"]
+        vec![".xsd"]
     }
 
     fn format_molecule(&self, mol: &Molecule) -> Result<String> {
