@@ -98,7 +98,11 @@ pub(self) fn parse_molecule_from_xsd(s: &str) -> Result<Molecule> {
         mol.set_scaled_positions(positions);
         mol
     } else {
-        let root = find_molecule_node(atomistic_tree_root.unwrap()).unwrap();
+        let mut root = find_molecule_node(atomistic_tree_root.unwrap()).unwrap();
+        // Molecule/RepeatUnit/Atom3d
+        let atom3d = if find_child_node(root, "Atom3d").is_none() {
+            root = find_child_node(root, "RepeatUnit").ok_or(anyhow!("cannot find Atom3d node for mol"))?;
+        };
         let atoms: Vec<_> = filter_child_node(root, "Atom3d").filter_map(|node| parse_atom_from(node)).collect();
         Molecule::from_atoms(atoms)
     };

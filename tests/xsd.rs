@@ -13,9 +13,9 @@ fn test_format_xsd() -> Result<()> {
     let mol = Molecule::from_file(f)?;
     assert_eq!(mol.natoms(), 5);
 
-    // let f = "tests/files/xsd/bisphenol.xsd";
-    // let mol = Molecule::from_file(f)?;
-    // assert_eq!(mol.natoms(), 18);
+    let f = "tests/files/xsd/bisphenol.xsd";
+    let mol = Molecule::from_file(f)?;
+    assert_eq!(mol.natoms(), 18);
 
     let f = "tests/files/xsd/pbc.xsd";
     let mol = Molecule::from_file(f)?;
