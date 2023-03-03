@@ -203,7 +203,7 @@ pub(super) fn format_as_chemical_file(mol: &Molecule, fmt: &str) -> Result<Strin
 }
 // write chemifile:1 ends here
 
-// [[file:../gchemol-readwrite.note::*backends][backends:1]]
+// [[file:../gchemol-readwrite.note::a68d64e7][a68d64e7]]
 macro_rules! avail_parsers {
     () => {
         vec![
@@ -215,6 +215,8 @@ macro_rules! avail_parsers {
             Box::new(self::gaussian_input::GaussianInputFile()),
             Box::new(self::sdf::SdfFile()),
             Box::new(self::pdb::PdbFile()),
+            Box::new(self::xsd::XsdFile()),
+            Box::new(self::car::CarFile()),
         ]
     };
 }
@@ -271,4 +273,4 @@ fn test_backends() {
     let cf = guess_chemical_file_format(f.as_ref(), None).expect("guess xyz ftype");
     assert_eq!(cf.ftype(), "vasp/input");
 }
-// backends:1 ends here
+// a68d64e7 ends here
