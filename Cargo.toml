@@ -1,7 +1,7 @@
 # [[file:gchemol-readwrite.note::bab3da57][bab3da57]]
 [package]
 name = "gchemol-readwrite"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Reading/writing chemical objects for gchemol"
@@ -19,7 +19,7 @@ handlebars = "=4.0"
 minijinja = "0.26.0"
 tera = "1"
 gut = { version="0.4", package="gchemol-gut" }
-gchemol-core = { version="0.1.3", features=["adhoc"] }
+gchemol-core = { version="0.1.4", features=["adhoc"] }
 gchemol-parser = "0.4.4"
 lazy-regex = "2.4.1"
 walkdir = "2.3.2"
