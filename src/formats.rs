@@ -1,6 +1,7 @@
 // [[file:../gchemol-readwrite.note::95b07dee][95b07dee]]
 mod car;
 mod cif;
+mod cml;
 mod mol2;
 mod pdb;
 mod sdf;
@@ -97,6 +98,7 @@ impl ChemicalFileParser {
         let mut p8 = None;
         let mut p9 = None;
         let mut p10 = None;
+        let mut p11 = None;
 
         match self.0.as_str() {
             "text/xyz" => cf_parse!(XyzFile, p1, r),
@@ -108,7 +110,8 @@ impl ChemicalFileParser {
             "vasp/input" => cf_parse!(PoscarFile, p7, r),
             "gaussian/input" => cf_parse!(GaussianInputFile, p8, r),
             "xml/xsd" => cf_parse!(XsdFile, p9, r),
-            "text/car" => cf_parse!(CarFile, p10, r),
+            "xml/cml" => cf_parse!(CarFile, p10, r),
+            "text/car" => cf_parse!(CarFile, p11, r),
             _ => bail!("No available parser found"),
         }
         Ok(p1
@@ -123,6 +126,7 @@ impl ChemicalFileParser {
             .chain(p8.into_iter().flatten())
             .chain(p9.into_iter().flatten())
             .chain(p10.into_iter().flatten())
+            .chain(p11.into_iter().flatten())
             .filter_map(|parsed| match parsed {
                 Ok(mol) => Some(mol),
                 Err(e) => {
@@ -137,6 +141,7 @@ impl ChemicalFileParser {
 // [[file:../gchemol-readwrite.note::fa51a104][fa51a104]]
 pub use self::car::CarFile;
 pub use self::cif::CifFile;
+pub use self::cml::CmlFile;
 pub use self::gaussian_input::GaussianInputFile;
 pub use self::mol2::Mol2File;
 pub use self::pdb::PdbFile;
