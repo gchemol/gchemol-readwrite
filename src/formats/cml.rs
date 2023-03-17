@@ -77,10 +77,6 @@ impl ChemicalFile for CmlFile {
     fn possible_extensions(&self) -> Vec<&str> {
         vec![".cml"]
     }
-
-    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
-        bail!("not implemented yet")
-    }
 }
 
 impl ParseMolecule for CmlFile {
@@ -94,15 +90,6 @@ impl ParseMolecule for CmlFile {
 }
 // b22e0379 ends here
 
-// [[file:../../gchemol-readwrite.note::d31472c6][d31472c6]]
-use super::*;
-
-// read all available stream at once
-impl super::parser::ReadPart for CmlFile {}
-
-impl CmlFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
-        Ok(r.partitions(*self))
-    }
-}
-// d31472c6 ends here
+// [[file:../../gchemol-readwrite.note::de0729da][de0729da]]
+crate::cf_impl_partitions!(CmlFile);
+// de0729da ends here

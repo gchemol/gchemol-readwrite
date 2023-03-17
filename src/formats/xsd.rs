@@ -140,10 +140,6 @@ impl ChemicalFile for XsdFile {
     fn possible_extensions(&self) -> Vec<&str> {
         vec![".xsd"]
     }
-
-    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
-        bail!("not implemented yet")
-    }
 }
 
 impl ParseMolecule for XsdFile {
@@ -154,30 +150,6 @@ impl ParseMolecule for XsdFile {
 }
 // 19028850 ends here
 
-// [[file:../../gchemol-readwrite.note::299b30ff][299b30ff]]
-use super::*;
-
-// read all available stream at once
-impl super::parser::ReadPart for XsdFile {}
-
-impl XsdFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
-        Ok(r.partitions(*self))
-    }
-}
-// 299b30ff ends here
-
-// [[file:../../gchemol-readwrite.note::b2151caa][b2151caa]]
-#[test]
-fn test_xsd_tree() -> Result<()> {
-    use crate::prelude::*;
-
-    use roxmltree::Document;
-
-    let f = "/home/ybyygu/Workspace/ToDo/ASAP/20210708 滕波涛rxe验证/1/P.xsd";
-    let mol = parse_molecule_from_xsd_file(f.as_ref())?;
-    // mol.to_file("/tmp/a.gjf");
-
-    Ok(())
-}
-// b2151caa ends here
+// [[file:../../gchemol-readwrite.note::b30158e0][b30158e0]]
+crate::cf_impl_partitions!(XsdFile);
+// b30158e0 ends here

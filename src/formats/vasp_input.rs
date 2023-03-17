@@ -335,7 +335,7 @@ fn test_poscar_symbols_counts() {
 }
 // format molecule:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*chemfile][chemfile:1]]
+// [[file:../../gchemol-readwrite.note::49ffb285][49ffb285]]
 #[derive(Clone, Copy, Debug)]
 pub struct PoscarFile();
 
@@ -398,15 +398,8 @@ fn test_vasp_input_parsable() {
     assert!(parsable("x.poscar"));
     assert!(parsable("x.vasp"));
 }
-// chemfile:1 ends here
+// 49ffb285 ends here
 
-// [[file:../../gchemol-readwrite.note::13101db6][13101db6]]
-// read all available stream at once
-impl ReadPart for PoscarFile {}
-
-impl PoscarFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
-        Ok(r.partitions(*self))
-    }
-}
-// 13101db6 ends here
+// [[file:../../gchemol-readwrite.note::*impl partition][impl partition:1]]
+crate::cf_impl_partitions!(PoscarFile);
+// impl partition:1 ends here

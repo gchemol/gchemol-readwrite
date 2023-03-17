@@ -428,7 +428,7 @@ fn format_molecule(mol: &Molecule) -> String {
 }
 // ccd72c38 ends here
 
-// [[file:../../gchemol-readwrite.note::*chemfile][chemfile:1]]
+// [[file:../../gchemol-readwrite.note::5436d589][5436d589]]
 #[derive(Clone, Copy, Debug)]
 pub struct PdbFile();
 
@@ -452,7 +452,7 @@ impl ParseMolecule for PdbFile {
         Ok(mol)
     }
 }
-// chemfile:1 ends here
+// 5436d589 ends here
 
 // [[file:../../gchemol-readwrite.note::cc0cbfc6][cc0cbfc6]]
 impl ReadPart for PdbFile {

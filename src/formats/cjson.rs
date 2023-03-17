@@ -96,7 +96,6 @@ pub(self) fn parse_molecule(s: &str) -> Result<Molecule> {
         }
     };
 
-    // ensure!(coords.len(), atom_numbers.len(), "invalid cjson atoms");
     let mol = if pbc {
         ensure!(m.unit_cell.is_some(), "malformed cjson: found frac coords but no unit cell");
         let u = m.unit_cell.unwrap();
@@ -146,15 +145,6 @@ impl ParseMolecule for ChemicalJsonFile {
 }
 // 9f750ad2 ends here
 
-// [[file:../../gchemol-readwrite.note::268351d5][268351d5]]
-use super::*;
-
-// read all available stream at once
-impl super::parser::ReadPart for ChemicalJsonFile {}
-
-impl ChemicalJsonFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
-        Ok(r.partitions(*self))
-    }
-}
-// 268351d5 ends here
+// [[file:../../gchemol-readwrite.note::9adb8e5b][9adb8e5b]]
+crate::cf_impl_partitions!(ChemicalJsonFile);
+// 9adb8e5b ends here

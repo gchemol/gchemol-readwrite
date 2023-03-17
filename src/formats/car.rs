@@ -126,10 +126,6 @@ impl ChemicalFile for CarFile {
     fn possible_extensions(&self) -> Vec<&str> {
         vec![".car", ".arc"]
     }
-
-    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
-        bail!("not implemented yet")
-    }
 }
 
 impl ParseMolecule for CarFile {
@@ -140,15 +136,6 @@ impl ParseMolecule for CarFile {
 }
 // 97511bc0 ends here
 
-// [[file:../../gchemol-readwrite.note::1f9aa2f3][1f9aa2f3]]
-use super::*;
-
-// read all available stream at once
-impl super::parser::ReadPart for CarFile {}
-
-impl CarFile {
-    pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
-        Ok(r.partitions(*self))
-    }
-}
-// 1f9aa2f3 ends here
+// [[file:../../gchemol-readwrite.note::051dbe86][051dbe86]]
+crate::cf_impl_partitions!(CarFile);
+// 051dbe86 ends here

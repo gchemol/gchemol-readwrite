@@ -39,9 +39,9 @@ pub(self) trait ChemicalFile: ParseMolecule {
     /// [".xyz", ".mol2"]
     fn possible_extensions(&self) -> Vec<&str>;
 
-    /// Formatted representation of a Molecule.
+    /// Formatted representation of a Molecule. Read-only by default.
     fn format_molecule(&self, mol: &Molecule) -> Result<String> {
-        unimplemented!()
+        bail!("not implemented yet")
     }
 
     /// Determine if file `filename` is parable according to its supported file
@@ -142,20 +142,41 @@ impl ChemicalFileParser {
 }
 // 640d1293 ends here
 
+// [[file:../gchemol-readwrite.note::4b27c909][4b27c909]]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! cf_impl_partitions {
+    ($chemical_file:ident) => {
+        mod impl_partitions {
+            use super::$chemical_file;
+            use crate::formats::*;
+
+            impl $chemical_file {
+                pub fn partitions<R: BufRead + Seek>(&self, mut r: TextReader<R>) -> Result<impl Iterator<Item = String>> {
+                    let mut s = String::new();
+                    let _ = r.read_to_string(&mut s)?;
+                    Ok(Some(s).into_iter())
+                }
+            }
+        }
+    };
+}
+// 4b27c909 ends here
+
 // [[file:../gchemol-readwrite.note::fa51a104][fa51a104]]
-pub use self::car::CarFile;
-pub use self::cif::CifFile;
-pub use self::cjson::ChemicalJsonFile;
-pub use self::cml::CmlFile;
+use self::car::CarFile;
+use self::cif::CifFile;
+use self::cjson::ChemicalJsonFile;
+use self::cml::CmlFile;
+use self::xsd::XsdFile;
+use self::xyz::PlainXyzFile;
+use self::xyz::XyzFile;
+
 pub use self::gaussian_input::GaussianInputFile;
 pub use self::mol2::Mol2File;
 pub use self::pdb::PdbFile;
 pub use self::sdf::SdfFile;
 pub use self::vasp_input::PoscarFile;
-pub use self::xsd::XsdFile;
-
-use self::xyz::PlainXyzFile;
-use self::xyz::XyzFile;
 
 pub(super) struct ChemicalFileParser(pub String);
 
