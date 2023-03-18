@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<molecule xmlns="http://www.xml-cml.org/schema" xmlns:cml="http://www.xml-cml.org/dict/cml" xmlns:units="http://www.xml-cml.org/units/units" xmlns:xsd="http://www.w3c.org/2001/XMLSchema" xmlns:iupac="http://www.iupac.org">
+  <crystal>
+    <scalar title="a" units="units:angstrom">2.8665</scalar>
+    <scalar title="b" units="units:angstrom">2.8665</scalar>
+    <scalar title="c" units="units:angstrom">2.8665</scalar>
+    <scalar title="alpha" units="units:degree">90</scalar>
+    <scalar title="beta" units="units:degree">90</scalar>
+    <scalar title="gamma" units="units:degree">90</scalar>
+    <symmetry spaceGroup="I m -3 m" />
+  </crystal>
+  <atomArray>
+    <atom id="a1" elementType="Fe" xFract="0" yFract="0" zFract="0" />
+  </atomArray>
+  <bondArray />
+</molecule>
