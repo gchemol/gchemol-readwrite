@@ -27,10 +27,17 @@ fn parse_atom_from(node: Node) -> Option<Atom> {
 // [[file:../../gchemol-readwrite.note::63fcee19][63fcee19]]
 fn parse_molecule_from(molecule: Node) -> Molecule {
     let atoms = molecule.descendants().filter(|n| n.has_tag_name("atom"));
-    // TODO: also parse bonds
-    // let bonds = molecule.descendants().filter(|n| n.has_tag_name("bonds"));
+    // parse atoms
     let atoms = atoms.filter_map(|node| parse_atom_from(node));
-    Molecule::from_atoms(atoms)
+
+    // molecular title
+    let title = molecule.attribute("id").unwrap_or("untitled cml");
+    let mut mol = Molecule::from_atoms(atoms);
+    mol.set_title(title);
+
+    // TODO: parse bonds
+    // let bonds = molecule.descendants().filter(|n| n.has_tag_name("bonds"));
+    mol
 }
 
 pub(self) fn parse_molecules(s: &str) -> Result<Vec<Molecule>> {
@@ -46,10 +53,46 @@ pub(self) fn parse_molecules(s: &str) -> Result<Vec<Molecule>> {
     Ok(mols)
 }
 
+fn write_molecule(s: &mut String, mol: &Molecule) {
+    let title = mol.title();
+    writeln!(s, " <molecule id='{title}'>");
+    // write atoms
+    writeln!(s, "  <atomArray>");
+    for (i, a) in mol.atoms() {
+        let sym = a.symbol();
+        let [x, y, z] = a.position();
+        writeln!(s, "   <atom id='a{i}' elementType='sym' x3='{x}' y3='{y}' z3='{z}' />");
+    }
+    writeln!(s, "  </atomArray>");
+    // write bonds
+    writeln!(s, "  <bondArray>");
+    for (u, v, _) in mol.bonds() {
+        writeln!(s, "   <bond atomRefs2='a{u} a{v} />\n");
+    }
+    writeln!(s, "  </bondArray>");
+
+    writeln!(s, "</molecule>");
+}
+
+/// Format a list of molecules in CML format.
+pub(self) fn format_molecules<'a>(mols: impl IntoIterator<Item = &'a Molecule>) -> String {
+    let mut s = String::new();
+    writeln!(&mut s, "<?xml version='1.0'?>");
+    writeln!(&mut s, "<list xmlns='http://www.xml-cml.org/schema'>");
+    for mol in mols.into_iter() {
+        write_molecule(&mut s, mol);
+    }
+    writeln!(&mut s, "</list>");
+    s
+}
+
 #[test]
 fn test_parse_mol_from_cml() -> Result<()> {
     let f = "tests/files/cml/1LJL_Cys10.cml";
     let s = gut::fs::read_file(f)?;
+    let mols = parse_molecules(&s)?;
+    let s = format_molecules(&mols);
+    println!("{}", s);
     let mols = parse_molecules(&s)?;
     assert_eq!(mols.len(), 7);
     let natoms_list = vec![1, 3, 7, 3, 207, 33, 13];
@@ -76,6 +119,11 @@ impl ChemicalFile for CmlFile {
 
     fn possible_extensions(&self) -> Vec<&str> {
         vec![".cml"]
+    }
+
+    fn format_molecule(&self, mol: &Molecule) -> Result<String> {
+        ensure!(!mol.is_periodic(), "cannot render Lattice in cml format!");
+        Ok(format_molecules([mol]))
     }
 }
 
