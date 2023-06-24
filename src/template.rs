@@ -228,6 +228,11 @@ pub fn to_json(mol: &Molecule) -> Result<String> {
     let serialized = serde_json::to_string_pretty(&data)?;
     Ok(serialized)
 }
+
+/// Convert molecule to json Value data structure for template rendering
+pub fn to_json_value(mol: &Molecule) -> serde_json::Value {
+    renderable(mol)
+}
 // e22b38a2 ends here
 
 // [[file:../gchemol-readwrite.note::0f1f521b][0f1f521b]]
