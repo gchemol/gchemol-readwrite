@@ -307,3 +307,7 @@ fn test_backends() {
     assert_eq!(cf.ftype(), "vasp/input");
 }
 // a68d64e7 ends here
+
+// [[file:../gchemol-readwrite.note::5ff2ae53][5ff2ae53]]
+pub use xyz::read_lattice_extxyz;
+// 5ff2ae53 ends here

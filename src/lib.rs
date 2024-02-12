@@ -28,7 +28,7 @@ pub mod prelude {
     pub use crate::template::TemplateRendering;
 }
 
-pub use crate::formats::describe_backends;
+pub use crate::formats::{describe_backends, read_lattice_extxyz};
 pub use crate::io::{find_files, guess_format_from_path, read, read_all, read_from, write, write_format};
 pub use crate::template::Template;
 pub use crate::template::{to_json, to_json_value};
