@@ -3,6 +3,7 @@ mod car;
 mod cif;
 mod cjson;
 mod cml;
+mod extxyz;
 mod mol2;
 mod pdb;
 mod sdf;

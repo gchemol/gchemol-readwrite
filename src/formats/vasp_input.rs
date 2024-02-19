@@ -178,7 +178,7 @@ pub(crate) fn parse_poscar_molecule(s: &str) -> IResult<&str, Molecule> {
             }
 
             for (i, (&sym, (pos, sflags))) in symbols.iter().zip(ion_positions).enumerate() {
-                let pos: Vector3f = if dbg!(direct_coordinates) {
+                let pos: Vector3f = if direct_coordinates {
                     lat.to_cart(pos)
                 } else {
                     pos.into()

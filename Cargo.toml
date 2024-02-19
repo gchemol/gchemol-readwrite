@@ -5,6 +5,7 @@ version = "0.1.10"
 edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Reading/writing chemical objects for gchemol"
+keywords = ["chemistry", "file"]
 homepage = "https://github.com/gchemol/gchemol-readwrite"
 repository = "https://github.com/gchemol/gchemol-readwrite"
 license = "GPL-3.0"
@@ -27,6 +28,7 @@ regex = "1.7.1"
 # quick-xml = { version="0.27", features=["serialize"] }
 roxmltree = "0.18.0"
 vecfx = { version="0.1", features = ["nalgebra"] }
+extxyz = "0.1.2"
 
 [dev-dependencies]
 
