@@ -310,5 +310,5 @@ fn test_backends() {
 // a68d64e7 ends here
 
 // [[file:../gchemol-readwrite.note::5ff2ae53][5ff2ae53]]
-pub use xyz::read_lattice_extxyz;
+pub use extxyz::ExtxyzFile;
 // 5ff2ae53 ends here
