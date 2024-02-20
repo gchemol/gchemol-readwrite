@@ -1,7 +1,7 @@
 # [[file:gchemol-readwrite.note::bab3da57][bab3da57]]
 [package]
 name = "gchemol-readwrite"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Reading/writing chemical objects for gchemol"

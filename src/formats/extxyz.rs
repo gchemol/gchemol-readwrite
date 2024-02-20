@@ -37,12 +37,26 @@ impl ExtxyzFile {
         }
         None
     }
+
+    fn format_lattice(lat: &Lattice) -> String {
+        let [va, vb, vc] = lat.vectors();
+        let va_s: String = va.iter().map(|x| format!("{x} ")).collect();
+        let vb_s: String = vb.iter().map(|x| format!("{x} ")).collect();
+        let vc_s: String = vc.iter().map(|x| format!("{x} ")).collect();
+        let lattice_data = ([va_s, vb_s, vc_s]).join(" ");
+        format!(r#"Lattice="{lattice_data}""#)
+    }
 }
 
 #[test]
 fn test_lattice_extxyz() {
     let line = "Lattice=\"13.5142 0.0 0.0 0.0 14.9833 0.0 0.0 0.0 20.0\" Properties=species:S:1:pos:R:3 pbc=\"T T T\"";
     let lat = ExtxyzFile::read_lattice(line);
+    assert!(lat.is_some());
+    assert_eq!(lat.unwrap().lengths(), [13.5142, 14.9833, 20.0]);
+
+    let s = ExtxyzFile::format_lattice(&lat.unwrap());
+    let lat = ExtxyzFile::read_lattice(&s);
     assert!(lat.is_some());
     assert_eq!(lat.unwrap().lengths(), [13.5142, 14.9833, 20.0]);
 }
@@ -82,21 +96,79 @@ fn get_molecule_from_extxyz_atoms(raw_atoms: RawAtoms) -> Result<Molecule> {
 }
 
 impl ExtxyzFile {
-    /// Read `Molecule` from file in `path` in extxyz format.
+    /// Parse `Molecule` from str `s` in extxyz format.
+    pub fn parse_molecule(s: &str) -> Result<Molecule> {
+        let atoms = RawAtoms::parse_from(&s)?;
+        let mol = get_molecule_from_extxyz_atoms(atoms)?;
+        Ok(mol)
+    }
+
+    /// Read `Molecule` from file in `path` in extxyz format. Invalid
+    /// frames will be discarded silently.
     pub fn read_molecules_from(path: impl AsRef<Path>) -> Result<impl Iterator<Item = Molecule>> {
         let frames = read_xyz_frames_direct(path)?;
-        let mols = frames.filter_map(|frame| {
-            let atoms = RawAtoms::parse_from(&frame).unwrap();
-            let mol = get_molecule_from_extxyz_atoms(dbg!(atoms)).unwrap();
-            Some(mol)
-        });
+        let mols = frames.filter_map(|frame| Self::parse_molecule(&frame).ok());
         Ok(mols)
     }
 }
 // 8ac5d7e7 ends here
 
 // [[file:../../gchemol-readwrite.note::ec30581c][ec30581c]]
+impl ExtxyzFile {
+    /// Returns a string representation of `mol` in extxyz
+    /// format. Properties such as "energy" for Molecule and "forces"
+    /// for atoms, will be also write if available in `mol`.
+    pub fn format_molecule(mol: &Molecule) -> String {
+        let mut s = String::new();
+        let natoms = mol.natoms();
+        let _ = writeln!(s, "{natoms}");
 
+        // Check if energy/forces properties. If available, write these attributes
+        let energy: Option<f64> = mol.properties.load("energy").ok();
+        let forces: Option<Vec<[f64; 3]>> = mol.atoms().map(|(_, a)| a.properties.load("forces").ok()).collect();
+        let has_forces = forces.as_ref().map(|forces| forces.len() == natoms) == Some(true);
+
+        let mut title = String::new();
+        if let Some(lat) = mol.get_lattice() {
+            title = Self::format_lattice(lat)
+        };
+
+        if has_forces {
+            title.push_str(" Properties=species:S:1:pos:R:3:forces:R:3");
+        } else {
+            title.push_str(" Properties=species:S:1:pos:R:3");
+        }
+        if let Some(energy) = energy {
+            title.push_str(&format!(" energy={energy}"));
+        }
+        let _ = writeln!(s, "{title}");
+        for (i, (_, a)) in mol.atoms().enumerate() {
+            let sym = a.symbol();
+            let [x, y, z] = a.position();
+            // write atom force vector
+            let mut extra = String::new();
+            if has_forces {
+                let [x, y, z] = forces.as_ref().unwrap()[i];
+                extra = format!("{x:18.9} {y:18.8} {z:18.8}");
+            }
+            let _ = writeln!(s, "{sym} {x:18.8} {y:18.8} {z:18.8} {extra}");
+        }
+
+        s
+    }
+
+    /// Write molecules into `path` in extxyz format.
+    pub fn write_molecules<'a>(path: impl AsRef<Path>, mols: impl IntoIterator<Item = &'a Molecule>) -> Result<()> {
+        let path = path.as_ref();
+        let mut fp = File::create(path).with_context(|| format!("Failed to create file: {path:?}"))?;
+        for mol in mols {
+            let s = Self::format_molecule(mol);
+            fp.write(s.as_bytes());
+        }
+
+        Ok(())
+    }
+}
 // ec30581c ends here
 
 // [[file:../../gchemol-readwrite.note::55a4e567][55a4e567]]
@@ -114,11 +186,18 @@ fn test_read_extxyz() -> Result<()> {
     let user_data: Vec<usize> = mol.properties.load("user-data")?;
     assert_eq!(user_data.len(), 3);
 
-    // test atom's properties
+   // test atom's properties
     let atom = mol.get_atom(1).unwrap();
     let energy: f64 = atom.properties.load("energy")?;
     assert_eq!(energy, 0.08400641);
 
+    // format molecule and then parse it
+    let s = ExtxyzFile::format_molecule(&mol);
+    let mol = ExtxyzFile::parse_molecule(dbg!(&s))?;
+    assert_eq!(mol.natoms(), 107);
+
+    let energy: f64 = mol.properties.load("energy")?;
+    assert_eq!(energy, 0.63);
     let force: [f64; 3] = atom.properties.load("forces")?;
     assert_eq!(force.len(), 3);
 
