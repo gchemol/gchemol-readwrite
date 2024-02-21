@@ -77,7 +77,7 @@ fn get_molecule_from_extxyz_atoms(raw_atoms: RawAtoms) -> Result<Molecule> {
     if let Ok(mut info) = raw_atoms.comment.parse::<Info>() {
         // get atom's properties
         for (i, a) in raw_atoms.atoms.into_iter().enumerate() {
-            let mut atom = Atom::new(a.element, a.positions);
+            let mut atom = Atom::new(a.element, a.position);
             // parse extra data for each atom
             let mut atom_properties = info.parse_extra_columns(&a.extra)?;
             atom.properties.raw_map_mut().append(&mut atom_properties);
