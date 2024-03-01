@@ -3,7 +3,6 @@ mod car;
 mod cif;
 mod cjson;
 mod cml;
-mod extxyz;
 mod mol2;
 mod pdb;
 mod sdf;
@@ -12,6 +11,9 @@ mod xyz;
 
 mod gaussian_input;
 mod vasp_input;
+
+#[cfg(feature = "adhoc")]
+mod extxyz;
 // 95b07dee ends here
 
 // [[file:../gchemol-readwrite.note::*imports][imports:1]]
@@ -310,5 +312,6 @@ fn test_backends() {
 // a68d64e7 ends here
 
 // [[file:../gchemol-readwrite.note::5ff2ae53][5ff2ae53]]
+#[cfg(feature = "adhoc")]
 pub use extxyz::ExtxyzFile;
 // 5ff2ae53 ends here
