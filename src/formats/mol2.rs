@@ -9,7 +9,7 @@
 use super::{parser::*, *};
 // imports:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*atom][atom:1]]
+// [[file:../../gchemol-readwrite.note::5b121788][5b121788]]
 fn read_atom_record(s: &str) -> IResult<&str, (usize, Atom)> {
     let mut optional = opt(atom_subst_and_charge);
     do_parse!(
@@ -110,7 +110,7 @@ fn format_atom(a: &Atom) -> String {
     let position = a.position();
     format!(
         "{name:8} {x:-12.5} {y:-12.5} {z:-12.5} {symbol:8} {subst_id:5} {subst_name:8} {charge:-6.4}\n",
-        name = a.label(),
+        name = a.get_label().unwrap_or(a.symbol()),
         x = position[0],
         y = position[1],
         z = position[2],
@@ -121,7 +121,7 @@ fn format_atom(a: &Atom) -> String {
         charge = 0.0,
     )
 }
-// atom:1 ends here
+// 5b121788 ends here
 
 // [[file:../../gchemol-readwrite.note::*atoms][atoms:1]]
 /// Parse Tripos Atom section

@@ -101,7 +101,7 @@ fn test_guess_element() {
 }
 // element:1 ends here
 
-// [[file:../../gchemol-readwrite.note::*atom records][atom records:1]]
+// [[file:../../gchemol-readwrite.note::1bfea000][1bfea000]]
 // Return Atom index (sn) and Atom object
 fn read_atom_record(s: &str) -> IResult<&str, (usize, Atom)> {
     let mut tag_atom = alt((tag("ATOM  "), tag("HETATM")));
@@ -147,7 +147,7 @@ fn format_atom(i: usize, a: &Atom) -> String {
         index=i,
         alt_loc=" ",
         res_name="xx",
-        name=a.label(),
+        name=a.get_label().unwrap_or(a.symbol()),
         chain_id=1,
         res_seq=1,
         icode=" ",
@@ -197,7 +197,7 @@ HETATM 1641  C8  MID E   5      -2.096   3.018  29.071  1.00 30.82           C\n
     let (_, atoms) = read_atoms(lines).expect("pdb atoms");
     assert_eq!(4, atoms.len());
 }
-// atom records:1 ends here
+// 1bfea000 ends here
 
 // [[file:../../gchemol-readwrite.note::*bond records][bond records:1]]
 fn read_bond_record(s: &str) -> IResult<&str, Vec<(usize, usize)>> {

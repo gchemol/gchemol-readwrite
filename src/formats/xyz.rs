@@ -149,7 +149,7 @@ fn build_mol_xyz(lines: &[&str]) -> Result<Molecule> {
 }
 // ed71e42e ends here
 
-// [[file:../../gchemol-readwrite.note::*xyz][xyz:1]]
+// [[file:../../gchemol-readwrite.note::fa6b0b98][fa6b0b98]]
 /// Classical XYZ format
 #[derive(Copy, Clone, Debug)]
 pub(super) struct XyzFile();
@@ -209,7 +209,7 @@ impl ParseMolecule for XyzFile {
         parse_molecule(input, false)
     }
 }
-// xyz:1 ends here
+// fa6b0b98 ends here
 
 // [[file:../../gchemol-readwrite.note::*plain xyz][plain xyz:1]]
 /// Plain xyz coordinates with atom symbols (no atom count line and title line)
