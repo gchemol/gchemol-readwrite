@@ -60,6 +60,10 @@ fn test_formats_xyz() -> Result<()> {
     let lat = mol.get_lattice().expect("vec cell");
     assert_eq!(lat.lengths(), [18.094, 20.516, 7.524,]);
 
+    // Read in extxyz format
+    let mols = gchemol_readwrite::read("./tests/files/extxyz/cu.xyz")?.collect_vec();
+    assert!(mols[0].is_periodic());
+
     Ok(())
 }
 // b3446f93 ends here

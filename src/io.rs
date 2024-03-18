@@ -159,10 +159,24 @@ pub use self::find::find_files;
 /// Read an iterator over `Molecule` from file.
 /// file format will be determined according to the path
 pub fn read<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = Molecule>> {
+    use crate::formats::ExtxyzFile;
+
     let path = path.as_ref();
-    crate::formats::ChemicalFileParser::guess_from_path(path)
-        .ok_or(format_err!("No parser for path: {:?}", path))?
-        .parse_molecules(path.as_ref())
+    // FIXME: rewrite below
+    let mut mols_extxyz = None;
+    if ExtxyzFile::parsable(path)? {
+        let mols: Vec<_> = ExtxyzFile::read_molecules_from(path)?.collect();
+        mols_extxyz = Some(mols.into_iter());
+    }
+    let mut mols_alt = None;
+    if mols_extxyz.is_none() {
+        mols_alt = crate::formats::ChemicalFileParser::guess_from_path(path)
+            .ok_or(format_err!("No parser for path: {:?}", path))?
+            .parse_molecules(path.as_ref())
+            .ok();
+    }
+
+    Ok(mols_extxyz.into_iter().flatten().chain(mols_alt.into_iter().flatten()))
 }
 
 // https://stackoverflow.com/questions/26368288/how-do-i-stop-iteration-and-return-an-error-when-iteratormap-returns-a-result

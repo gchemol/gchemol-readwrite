@@ -171,6 +171,42 @@ impl ExtxyzFile {
 }
 // ec30581c ends here
 
+// [[file:../../gchemol-readwrite.note::8b8bce94][8b8bce94]]
+impl ExtxyzFile {
+    pub(crate) fn parsable(path: &Path) -> Result<bool> {
+        use std::fs::File;
+        use std::io;
+        use std::io::prelude::*;
+        use std::io::BufReader;
+
+        let possible_extensions = [".extxyz", ".xyz"];
+        let filename = path.display().to_string().to_lowercase();
+        for s in &possible_extensions {
+            if filename.ends_with(s) {
+                let mut f = File::open(path)?;
+                let mut reader = BufReader::new(f);
+                if let Some(Ok(line)) = reader.lines().skip(1).take(1).next() {
+                    return Ok(line.contains("Properties=species:S:1"));
+                }
+            }
+        }
+
+        Ok(false)
+    }
+}
+
+#[test]
+fn test_extxyz_parsable() {
+    let f = "./tests/files/extxyz/cu.xyz";
+    let parsable = ExtxyzFile::parsable(f.as_ref()).unwrap();
+    assert!(parsable);
+
+    let f = "./tests/files/xyz/H2O.xyz";
+    let parsable = ExtxyzFile::parsable(f.as_ref()).unwrap();
+    assert!(!parsable);
+}
+// 8b8bce94 ends here
+
 // [[file:../../gchemol-readwrite.note::55a4e567][55a4e567]]
 #[test]
 fn test_read_extxyz() -> Result<()> {
