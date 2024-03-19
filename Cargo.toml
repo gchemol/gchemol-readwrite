@@ -20,7 +20,7 @@ handlebars = "=4.0"
 minijinja = "1.0"
 tera = "1"
 gut = { version="0.4", package="gchemol-gut" }
-gchemol-core = { version="0.1.6", features=["adhoc"] }
+gchemol-core = { version="0.1.7", features=["adhoc"] }
 gchemol-parser = "0.4.4"
 lazy-regex = "2.4.1"
 walkdir = "2.3.2"
