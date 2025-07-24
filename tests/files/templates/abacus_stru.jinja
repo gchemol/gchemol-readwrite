@@ -1,0 +1,51 @@
+{# Abacus STRU file template #}
+{# ATOMIC_SPECIES section #}
+ATOMIC_SPECIES
+{%- for species in molecule.species %}
+{{ species.element_symbol | format("3") }} {{ species.element_number | format("6") }} {{ species.element_symbol }}_ONCV_PBE-1.0.upf upf201
+{%- endfor %}
+
+{# NUMERICAL_ORBITAL section #}
+{%- if numerical_orbital %}
+NUMERICAL_ORBITAL
+{%- for species in molecule.species %}
+{{ species.element_symbol }}_gga_8au_60Ry_2s2p1d.orb
+{%- endfor %}
+{%- endif %}
+
+{# LATTICE_CONSTANT section #}
+LATTICE_CONSTANT
+{{ lattice_constant | default(10.0) | format("10.6") }}
+
+{# LATTICE_VECTORS section #}
+{%- if not latname %}
+LATTICE_VECTORS
+{%- if molecule.unit_cell %}
+{%- set cell = molecule.unit_cell %}
+{{ cell.va[0] | format("12.6") }} {{ cell.va[1] | format("12.6") }} {{ cell.va[2] | format("12.6") }}
+{{ cell.vb[0] | format("12.6") }} {{ cell.vb[1] | format("12.6") }} {{ cell.vb[2] | format("12.6") }}
+{{ cell.vc[0] | format("12.6") }} {{ cell.vc[1] | format("12.6") }} {{ cell.vc[2] | format("12.6") }}
+{%- else %}
+{{ "1.0" | format("12.6") }} {{ "0.0" | format("12.6") }} {{ "0.0" | format("12.6") }}
+{{ "0.0" | format("12.6") }} {{ "1.0" | format("12.6") }} {{ "0.0" | format("12.6") }}
+{{ "0.0" | format("12.6") }} {{ "0.0" | format("12.6") }} {{ "1.0" | format("12.6") }}
+{%- endif %}
+{%- endif %}
+
+{# ATOMIC_POSITIONS section #}
+ATOMIC_POSITIONS
+{{ coordinate_type | default("Direct") }}
+{%- for species in molecule.species %}
+{{ species.element_symbol }}
+{{ "0.0" | format("10.6") }}  {# Default magnetic moment #}
+{{ species.number_of_atoms }}
+{%- for atom in molecule.atoms %}
+{%- if atom.symbol == species.element_symbol %}
+{%- if coordinate_type == "Cartesian" or coordinate_type == "Cartesian_au" or coordinate_type == "Cartesian_angstrom" %}
+{{ atom.x | format("12.6") }} {{ atom.y | format("12.6") }} {{ atom.z | format("12.6") }} {{ (not atom.freezing[0]) | int }} {{ (not atom.freezing[1]) | int }} {{ (not atom.freezing[2]) | int }}
+{%- else %}
+{{ atom.fx | format("12.6") }} {{ atom.fy | format("12.6") }} {{ atom.fz | format("12.6") }} {{ (not atom.freezing[0]) | int }} {{ (not atom.freezing[1]) | int }} {{ (not atom.freezing[2]) | int }}
+{%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- endfor %}
